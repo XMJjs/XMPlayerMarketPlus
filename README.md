@@ -2,7 +2,7 @@
 
 > **SweetPlayerMarket × PlayerAuctions 完美集成版** —— 全球市场 + 拍卖行二合一
 
-[![build](https://github.com/your-name/XMPlayerMarketPlus/actions/workflows/build.yml/badge.svg)](https://github.com/your-name/XMPlayerMarketPlus/actions/workflows/build.yml)
+[![build](https://github.com/XMJjs/XMPlayerMarketPlus/actions/workflows/build.yml/badge.svg)](https://github.com/XMJjs/XMPlayerMarketPlus/actions/workflows/build.yml)
 ![Java](https://img.shields.io/badge/Java-8%2B-orange)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.13%2B-blueviolet)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
@@ -104,11 +104,11 @@
 
 ## 📄 开源协议
 
-本项目基于 [AGPL-3.0](LICENSE) 开源（因派生自 SweetPlayerMarket 的 AGPL 授权，并移植了 GPL 授权的 PlayerAuctions 逻辑，采用更严格的 AGPL 以同时满足双方要求）。
+**开源协议跟随原项目（SweetPlayerMarket）**：本项目使用 [AGPL-3.0](LICENSE)（GNU Affero General Public License v3），与上游 SweetPlayerMarket 完全一致。
 
-- 上游项目：[MrXiaoM/SweetPlayerMarket](https://github.com/MrXiaoM/SweetPlayerMarket)（AGPL-3.0）
-- 移植参考：[MinekartaStudio/PlayerAuctions](https://github.com/MinekartaStudio/PlayerAuctions)（GPL-3.0，本仓库按相同业务逻辑重写实现，非代码复制）
-- 使用本插件请遵守 AGPL-3.0 条款（保留版权声明、开源修改后的源码等）。
+- 上游主项目：[MrXiaoM/SweetPlayerMarket](https://github.com/MrXiaoM/SweetPlayerMarket)（AGPL-3.0）—— 本仓库主体代码派生自该项目，LICENSE 文本与其逐字节一致
+- 移植参考：[MinekartaStudio/PlayerAuctions](https://github.com/MinekartaStudio/PlayerAuctions)（GPL-3.0）—— 拍卖业务逻辑按相同设计独立重写实现；AGPL-3.0 为 GPL-3.0 的兼容超集（AGPL 义务 ≥ GPL），使用 AGPL 同时满足双方授权要求
+- 使用本插件请遵守 AGPL-3.0 条款（保留版权声明、修改后需开源等）。
 
 ## 🙏 致谢
 
