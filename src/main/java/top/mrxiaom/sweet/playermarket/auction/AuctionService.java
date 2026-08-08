@@ -8,7 +8,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import top.mrxiaom.pluginbase.func.AutoRegister;
 import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
 import top.mrxiaom.sweet.playermarket.economy.IEconomy;
 import top.mrxiaom.sweet.playermarket.func.AbstractModule;
@@ -33,7 +32,6 @@ import java.util.function.Consumer;
  *
  * <p>经济：复用 SweetPlayerMarket 的 {@link IEconomy} 多币种体系（默认取 auction.yml 的 currency）。
  */
-@AutoRegister
 public class AuctionService extends AbstractModule {
     public AuctionService(SweetPlayerMarket plugin) {
         super(plugin);

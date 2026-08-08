@@ -1,7 +1,6 @@
 package top.mrxiaom.sweet.playermarket.auction;
 
 import org.bukkit.configuration.MemoryConfiguration;
-import top.mrxiaom.pluginbase.func.AutoRegister;
 import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
 import top.mrxiaom.sweet.playermarket.func.AbstractModule;
 
@@ -9,15 +8,13 @@ import top.mrxiaom.sweet.playermarket.func.AbstractModule;
  * 到期拍卖处理定时任务。
  *
  * <p>对应 PlayerAuctions 的 AuctionExpirer（原每 30 秒异步跑一次）。
- * 周期从 AuctionConfig（auction.yml → auction.expire-interval-seconds）读取，
- * 默认 30 秒。
- *
- * <p>启动时机：模块由框架加载并调用 reloadConfig 时，数据库与 AuctionConfig
- * 均已就绪（AuctionConfig priority=990 先加载），因此在此处一次性启动定时器
- * （用 started 防重复）。
+ * 本模块不带 @AutoRegister，由 SweetPlayerMarket.beforeEnable 显式 new 注册，
+ * 保证 reloadConfig 阶段 AuctionConfig 等依赖模块已就绪。
+ * 防御性读取配置：instanceOf 失败时回退默认 30 秒。
  */
-@AutoRegister
 public class AuctionExpireTask extends AbstractModule {
+    private static final long DEFAULT_INTERVAL_SECONDS = 30;
+
     private boolean started = false;
 
     public AuctionExpireTask(SweetPlayerMarket plugin) {
@@ -28,7 +25,12 @@ public class AuctionExpireTask extends AbstractModule {
     public void reloadConfig(MemoryConfiguration config) {
         if (!started) {
             started = true;
-            long interval = Math.max(5, AuctionConfig.inst().expireIntervalSeconds());
+            long interval = DEFAULT_INTERVAL_SECONDS;
+            try {
+                interval = Math.max(5, AuctionConfig.inst().expireIntervalSeconds());
+            } catch (IllegalStateException ignored) {
+                // 模块加载阶段 AuctionConfig 可能尚未注册，回退默认 30 秒（与 PlayerAuctions 一致）
+            }
             plugin.getScheduler().runTaskTimerAsync(this::run, 20 * 5L, interval * 20L);
         }
     }

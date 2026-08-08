@@ -7,7 +7,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.jetbrains.annotations.NotNull;
 import top.mrxiaom.pluginbase.api.InventoryViewAccessor;
-import top.mrxiaom.pluginbase.func.AutoRegister;
 import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
 import top.mrxiaom.sweet.playermarket.auction.Auction;
 import top.mrxiaom.sweet.playermarket.auction.AuctionService;
@@ -18,7 +17,6 @@ import java.util.List;
  * 拍卖浏览列表（分页 + 排序）。
  * 打开入口：主菜单"浏览拍卖"、/spm auction list。
  */
-@AutoRegister
 public class GuiAuctionList extends AbstractAuctionGui {
     public GuiAuctionList(SweetPlayerMarket plugin) {
         super(plugin, "auction-list.yml");

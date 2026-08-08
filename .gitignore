@@ -61,3 +61,4 @@ run/
 !libs/*.jar
 
 .workbuddy/
+.workbuddy-check.py

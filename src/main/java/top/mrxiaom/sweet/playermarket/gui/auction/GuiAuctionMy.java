@@ -7,7 +7,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.jetbrains.annotations.NotNull;
 import top.mrxiaom.pluginbase.api.InventoryViewAccessor;
-import top.mrxiaom.pluginbase.func.AutoRegister;
 import top.mrxiaom.pluginbase.gui.IGuiHolder;
 import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
 import top.mrxiaom.sweet.playermarket.auction.Auction;
@@ -26,7 +25,6 @@ import java.util.List;
  *   <li>Shift+左键：直接取消（仅 ACTIVE）</li>
  * </ul>
  */
-@AutoRegister
 public class GuiAuctionMy extends AbstractAuctionGui {
     public GuiAuctionMy(SweetPlayerMarket plugin) {
         super(plugin, "auction-my.yml");

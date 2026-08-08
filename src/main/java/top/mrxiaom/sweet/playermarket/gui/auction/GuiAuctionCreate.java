@@ -8,7 +8,6 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import top.mrxiaom.pluginbase.api.InventoryViewAccessor;
-import top.mrxiaom.pluginbase.func.AutoRegister;
 import top.mrxiaom.pluginbase.func.gui.LoadedIcon;
 import top.mrxiaom.pluginbase.utils.ListPair;
 import top.mrxiaom.pluginbase.utils.Pair;
@@ -36,7 +35,6 @@ import java.util.List;
  * </ul>
  * 状态占位符：%create_price% %create_buy_now% %create_duration% %create_auto_extend%
  */
-@AutoRegister
 public class GuiAuctionCreate extends AbstractAuctionGui {
     private static final long[] DURATIONS = {60, 6 * 60, 24 * 60, 48 * 60, 72 * 60, 7 * 24 * 60};
 

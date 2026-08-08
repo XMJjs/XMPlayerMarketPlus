@@ -14,7 +14,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
-import top.mrxiaom.pluginbase.func.AutoRegister;
 import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
 import top.mrxiaom.sweet.playermarket.auction.AuctionConfig;
 import top.mrxiaom.sweet.playermarket.auction.AuctionMessages;
@@ -32,7 +31,6 @@ import java.util.List;
  * </ul>
  * Citizens 通过纯反射调用，无编译依赖（服务端未装 Citizens 时自动跳过）。
  */
-@AutoRegister
 public class AuctionInteractListener extends AbstractModule implements Listener {
     private static final String TOKEN_KEY = "xm_auction_token";
     private static final String TOKEN_NAME = "§6§l拍卖行令牌";

@@ -7,7 +7,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.jetbrains.annotations.NotNull;
 import top.mrxiaom.pluginbase.api.InventoryViewAccessor;
-import top.mrxiaom.pluginbase.func.AutoRegister;
 import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
 import top.mrxiaom.sweet.playermarket.auction.Auction;
 import top.mrxiaom.sweet.playermarket.auction.AuctionService;
@@ -24,7 +23,6 @@ import java.util.List;
  *   <li>右键：领取拍得的物品（claim.buyer.items，成交后背包满或离线场景）</li>
  * </ul>
  */
-@AutoRegister
 public class GuiAuctionBids extends AbstractAuctionGui {
     public GuiAuctionBids(SweetPlayerMarket plugin) {
         super(plugin, "auction-bids.yml");

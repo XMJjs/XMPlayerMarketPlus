@@ -7,7 +7,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.jetbrains.annotations.Nullable;
 import top.mrxiaom.pluginbase.api.InventoryViewAccessor;
-import top.mrxiaom.pluginbase.func.AutoRegister;
 import top.mrxiaom.pluginbase.func.gui.LoadedIcon;
 import top.mrxiaom.pluginbase.gui.IGuiHolder;
 import top.mrxiaom.pluginbase.utils.Pair;
@@ -31,7 +30,6 @@ import java.util.List;
  *   <li>'返'：返回上一界面</li>
  * </ul>
  */
-@AutoRegister
 public class GuiAuctionDetail extends AbstractAuctionGui {
     public GuiAuctionDetail(SweetPlayerMarket plugin) {
         super(plugin, "auction-detail.yml");

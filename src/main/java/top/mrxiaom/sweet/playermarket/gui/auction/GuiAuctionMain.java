@@ -8,7 +8,6 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import top.mrxiaom.pluginbase.api.InventoryViewAccessor;
-import top.mrxiaom.pluginbase.func.AutoRegister;
 import top.mrxiaom.pluginbase.gui.IGuiHolder;
 import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
 import top.mrxiaom.sweet.playermarket.auction.Auction;
@@ -23,7 +22,6 @@ import java.util.List;
  * <p>布局：gui/auction-main.yml，other-icons 提供
  * 浏览拍卖 / 我的拍卖 / 竞拍记录 / 创建拍卖 / 刷新 等导航按钮。
  */
-@AutoRegister
 public class GuiAuctionMain extends AbstractAuctionGui {
     public GuiAuctionMain(SweetPlayerMarket plugin) {
         super(plugin, "auction-main.yml");

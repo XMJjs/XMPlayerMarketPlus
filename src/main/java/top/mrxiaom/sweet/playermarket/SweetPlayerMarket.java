@@ -258,6 +258,21 @@ public class SweetPlayerMarket extends BukkitPlugin {
         // ✚ XMPlayerMarketPlus：注册拍卖数据库（auctions + auction_bids 表）
         options.registerDatabase(this.auctionDatabase = new top.mrxiaom.sweet.playermarket.auction.AuctionDatabase(this));
 
+        // ✚ XMPlayerMarketPlus：注册拍卖核心模块（显式 new，构造即注册）。
+        // 这些类不带 @AutoRegister（由本处统一管理），保证注册时序确定：
+        // 全部实例化完成后，框架 reloadAllConfig 才会对它们调用 reloadConfig，
+        // 避免"模块加载阶段 instanceOf 其他模块"导致的启用崩溃。
+        new top.mrxiaom.sweet.playermarket.auction.AuctionConfig(this);
+        new top.mrxiaom.sweet.playermarket.auction.AuctionService(this);
+        new top.mrxiaom.sweet.playermarket.auction.AuctionExpireTask(this);
+        new top.mrxiaom.sweet.playermarket.gui.auction.GuiAuctionMain(this);
+        new top.mrxiaom.sweet.playermarket.gui.auction.GuiAuctionList(this);
+        new top.mrxiaom.sweet.playermarket.gui.auction.GuiAuctionDetail(this);
+        new top.mrxiaom.sweet.playermarket.gui.auction.GuiAuctionMy(this);
+        new top.mrxiaom.sweet.playermarket.gui.auction.GuiAuctionBids(this);
+        new top.mrxiaom.sweet.playermarket.gui.auction.GuiAuctionCreate(this);
+        new top.mrxiaom.sweet.playermarket.listener.AuctionInteractListener(this);
+
         LanguageManager.inst()
                 .setLangFile("messages.yml")
                 .register(Messages.class)
