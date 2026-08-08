@@ -57,7 +57,7 @@ public class CommandMain extends AbstractModule implements CommandExecutor, TabC
             if (!sender.hasPermission("sweet.playermarket.auction")) {
                 return Messages.Command.no_permission.tm(sender);
             }
-            return command.to(top.mrxiaom.sweet.playermarket.commands.arguments.AuctionArguments::of)
+            return command.into(top.mrxiaom.sweet.playermarket.commands.arguments.AuctionArguments::of)
                     .execute(plugin, sender);
         }
         if (command.match("open")) {

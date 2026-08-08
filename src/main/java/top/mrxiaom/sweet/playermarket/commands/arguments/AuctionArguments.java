@@ -3,9 +3,9 @@ package top.mrxiaom.sweet.playermarket.commands.arguments;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import top.mrxiaom.pluginbase.utils.Pair;
+import top.mrxiaom.pluginbase.utils.arguments.CommandArguments;
 import top.mrxiaom.sweet.playermarket.Messages;
 import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
-import top.mrxiaom.pluginbase.utils.arguments.CommandArguments;
 import top.mrxiaom.sweet.playermarket.api.AbstractArguments;
 import top.mrxiaom.sweet.playermarket.auction.AuctionConfig;
 import top.mrxiaom.sweet.playermarket.auction.AuctionMessages;
@@ -18,7 +18,7 @@ import top.mrxiaom.sweet.playermarket.gui.auction.GuiAuctionMy;
 import top.mrxiaom.sweet.playermarket.listener.AuctionInteractListener;
 
 /**
- * /spm auction 子命令参数解析。
+ * /spm auction 子命令参数解析（CommandMain 通过 into() 调用）。
  *
  * <pre>
  * /spm auction                     → 拍卖主菜单
@@ -62,19 +62,27 @@ public class AuctionArguments extends AbstractArguments<CommandSender> {
         if (match("create")) {
             if (!(sender instanceof Player)) return Messages.player__only.tm(sender);
             Player player = (Player) sender;
-            if (last()) {
+            Double price = nextOptional(this::parseDoubleOrNull);
+            if (price == null) {
+                // 无参数 → 打开创建向导
                 GuiAuctionCreate.open(player);
                 return true;
             }
-            return executeCreate(plugin, player);
+            return executeCreate(plugin, player, price);
         }
         if (match("sell")) {
             if (!(sender instanceof Player)) return Messages.player__only.tm(sender);
-            return executeCreate(plugin, (Player) sender);
+            Double price = nextOptional(this::parseDoubleOrNull);
+            if (price == null) {
+                return AuctionMessages.create__no_price_valid.tm(sender);
+            }
+            return executeCreate(plugin, (Player) sender, price);
         }
         if (match("cancel")) {
-            if (last()) return AuctionMessages.cancel__not_own.tm(sender);
-            String auctionId = nextString();
+            String auctionId = nextOptional(s -> s);
+            if (auctionId == null) {
+                return AuctionMessages.cancel__not_own.tm(sender);
+            }
             if (!(sender instanceof Player)) return Messages.player__only.tm(sender);
             AuctionService.inst().cancelAuction((Player) sender, auctionId, null);
             return true;
@@ -98,27 +106,18 @@ public class AuctionArguments extends AbstractArguments<CommandSender> {
         return true;
     }
 
-    private boolean executeCreate(SweetPlayerMarket plugin, Player player) {
-        double startPrice = nextDouble(0, 0);
-        if (startPrice <= 0) {
-            return AuctionMessages.create__no_price_valid.tm(player);
-        }
+    private boolean executeCreate(SweetPlayerMarket plugin, Player player, double startPrice) {
         double minPrice = AuctionConfig.inst().minStartPrice();
         if (startPrice < minPrice) {
             return AuctionMessages.create__price_too_low.tm(player, Pair.of("%min%", String.valueOf(minPrice)));
         }
-        double buyNow = nextDouble(0, 0);
-        long durationMinutes;
-        if (last()) {
-            durationMinutes = AuctionConfig.inst().defaultDurationMinutes();
-        } else {
-            durationMinutes = AuctionConfig.parseMinutes(nextString(), 0);
-        }
+        double buyNow = nextDouble(0.0, 0.0);
+        Long durationMinutesObj = nextOptional(s -> AuctionConfig.parseMinutes(s, 0));
+        long durationMinutes = durationMinutesObj == null || durationMinutesObj <= 0
+                ? AuctionConfig.inst().defaultDurationMinutes()
+                : durationMinutesObj;
         long minDuration = AuctionConfig.inst().minDurationMinutes();
         long maxDuration = AuctionConfig.inst().maxDurationMinutes();
-        if (durationMinutes <= 0) {
-            return AuctionMessages.create__duration_invalid.tm(player);
-        }
         if (durationMinutes < minDuration || durationMinutes > maxDuration) {
             return AuctionMessages.create__duration_out_of_range.tm(player,
                     Pair.of("%min%", minDuration + "分钟"),
@@ -130,5 +129,13 @@ public class AuctionArguments extends AbstractArguments<CommandSender> {
                 startPrice, buyNow, 0, durationMinutes,
                 AuctionConfig.inst().autoExtendEnabled(), null);
         return true;
+    }
+
+    private Double parseDoubleOrNull(String input) {
+        try {
+            return Double.parseDouble(input.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

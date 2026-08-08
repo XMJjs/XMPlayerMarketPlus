@@ -138,7 +138,7 @@ public class AuctionConfig extends AbstractModule {
      * 无法解析时返回 fallback。
      */
     public static long parseMinutes(@NotNull String str, long fallback) {
-        if (str == null || str.isBlank()) return fallback;
+        if (str == null || str.trim().isEmpty()) return fallback;
         Matcher matcher = DURATION.matcher(str.toLowerCase());
         long total = 0;
         boolean found = false;

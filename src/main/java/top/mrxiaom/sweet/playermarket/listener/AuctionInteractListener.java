@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -20,14 +21,16 @@ import top.mrxiaom.sweet.playermarket.auction.AuctionMessages;
 import top.mrxiaom.sweet.playermarket.func.AbstractModule;
 import top.mrxiaom.sweet.playermarket.gui.auction.GuiAuctionMain;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 /**
  * 拍卖打开入口监听器：
  * <ul>
- *   <li><b>拍卖令牌右键</b>：手持带 PDC 标记的令牌（默认 PAPER + 名称）右键 → 打开拍卖主菜单。</li>
- *   <li><b>NPC 右键</b>：软依赖 Citizens，右键 NPC → 打开拍卖主菜单。</li>
+ *   <li><b>拍卖令牌右键</b>（PlayerInteractEvent）：手持带 PDC 标记的令牌（默认 PAPER + 名称）右键 → 打开拍卖主菜单。</li>
+ *   <li><b>NPC 右键</b>（PlayerInteractEntityEvent）：软依赖 Citizens，右键 NPC → 打开拍卖主菜单。</li>
  * </ul>
+ * Citizens 通过纯反射调用，无编译依赖（服务端未装 Citizens 时自动跳过）。
  */
 @AutoRegister
 public class AuctionInteractListener extends AbstractModule implements Listener {
@@ -54,9 +57,8 @@ public class AuctionInteractListener extends AbstractModule implements Listener 
      */
     public static void giveToken(Player player) {
         SweetPlayerMarket plugin = SweetPlayerMarket.getInstance();
-        ItemStack token = new ItemStack(Material.getMaterial(AuctionConfig.inst().tokenMaterial()) != null
-                ? Material.getMaterial(AuctionConfig.inst().tokenMaterial())
-                : Material.PAPER);
+        Material tokenMaterial = Material.getMaterial(AuctionConfig.inst().tokenMaterial());
+        ItemStack token = new ItemStack(tokenMaterial != null ? tokenMaterial : Material.PAPER);
         ItemMeta meta = token.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(TOKEN_NAME);
@@ -70,6 +72,7 @@ public class AuctionInteractListener extends AbstractModule implements Listener 
         AuctionMessages.token__given.tm(player);
     }
 
+    /** 令牌右键（物品交互） */
     @EventHandler
     public void onInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
@@ -79,35 +82,46 @@ public class AuctionInteractListener extends AbstractModule implements Listener 
         if (!player.hasPermission("sweet.playermarket.auction")) {
             return;
         }
-        // 1. 拍卖令牌右键
         if (AuctionConfig.inst().entranceToken() && isToken(event.getItem())) {
             event.setCancelled(true);
             GuiAuctionMain.open(player);
+        }
+    }
+
+    /** NPC 右键（实体交互，Citizens 纯反射检测） */
+    @EventHandler
+    public void onInteractEntity(PlayerInteractEntityEvent event) {
+        Player player = event.getPlayer();
+        if (!player.hasPermission("sweet.playermarket.auction")) {
             return;
         }
-        // 2. NPC 右键（Citizens 软依赖）
-        if (AuctionConfig.inst().entranceNpc() && event.getClickedEntity() != null) {
-            if (isCitizensNpc(event.getClickedEntity())) {
-                event.setCancelled(true);
-                GuiAuctionMain.open(player);
-            }
+        if (!AuctionConfig.inst().entranceNpc()) {
+            return;
+        }
+        if (isCitizensNpc(event.getRightClicked())) {
+            event.setCancelled(true);
+            GuiAuctionMain.open(player);
         }
     }
 
     private static Boolean citizensAvailable = null;
+    private static Method npcRegistryIsNpc = null;
+    private static Object npcRegistry = null;
 
+    /** 纯反射调用 CitizensAPI.getNPCRegistry().isNPC(entity)，无编译依赖 */
     private boolean isCitizensNpc(@NotNull Entity entity) {
-        if (citizensAvailable == null) {
-            try {
-                Class.forName("net.citizensnpcs.api.CitizensAPI");
-                citizensAvailable = true;
-            } catch (ClassNotFoundException | LinkageError e) {
-                citizensAvailable = false;
-            }
-        }
-        if (!citizensAvailable) return false;
         try {
-            return net.citizensnpcs.api.CitizensAPI.getNPCRegistry().isNPC(entity);
+            if (citizensAvailable == null) {
+                Class<?> apiClass = Class.forName("net.citizensnpcs.api.CitizensAPI");
+                npcRegistry = apiClass.getMethod("getNPCRegistry").invoke(null);
+                npcRegistryIsNpc = npcRegistry.getClass().getMethod("isNPC", Entity.class);
+                citizensAvailable = true;
+            }
+            if (!citizensAvailable) return false;
+            return (Boolean) npcRegistryIsNpc.invoke(npcRegistry, entity);
+        } catch (ClassNotFoundException | LinkageError e) {
+            citizensAvailable = false; // 未安装 Citizens
+            return false;
         } catch (Throwable e) {
             return false;
         }

@@ -150,7 +150,7 @@ public class GuiAuctionDetail extends AbstractAuctionGui {
 
         private void afterBid(boolean success) {
             if (success) {
-                plugin.getScheduler().runTask(GuiAuctionDetail.this::refreshFromCurrent);
+                plugin.getScheduler().runTask(this::refreshFromCurrent);
             }
         }
 

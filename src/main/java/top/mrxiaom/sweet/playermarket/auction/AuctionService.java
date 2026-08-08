@@ -791,7 +791,8 @@ public class AuctionService extends AbstractModule {
                 net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(miniMessage);
         plugin.getScheduler().runTask(() -> {
             for (Player online : Bukkit.getOnlinePlayers()) {
-                online.sendMessage(component);
+                // AdventureUtil.of(player) 为 pluginbase 提供的跨版本发送入口（spigot-api 编译期可用）
+                top.mrxiaom.pluginbase.utils.AdventureUtil.of(online).sendMessage(component);
             }
         });
     }
