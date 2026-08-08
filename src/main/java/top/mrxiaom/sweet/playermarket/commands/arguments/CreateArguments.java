@@ -1,0 +1,411 @@
+package top.mrxiaom.sweet.playermarket.commands.arguments;
+
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
+import top.mrxiaom.pluginbase.utils.AdventureItemStack;
+import top.mrxiaom.pluginbase.utils.Pair;
+import top.mrxiaom.pluginbase.utils.arguments.Arguments;
+import top.mrxiaom.sweet.playermarket.Messages;
+import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
+import top.mrxiaom.sweet.playermarket.api.AbstractArguments;
+import top.mrxiaom.sweet.playermarket.api.event.MarketItemBeforeCreateEvent;
+import top.mrxiaom.sweet.playermarket.api.event.MarketItemCreatedEvent;
+import top.mrxiaom.sweet.playermarket.commands.CommandMain;
+import top.mrxiaom.sweet.playermarket.data.EnumMarketType;
+import top.mrxiaom.sweet.playermarket.data.MarketItem;
+import top.mrxiaom.sweet.playermarket.data.MarketItemBuilder;
+import top.mrxiaom.sweet.playermarket.data.OutdateTime;
+import top.mrxiaom.sweet.playermarket.data.limitation.BaseLimitation;
+import top.mrxiaom.sweet.playermarket.data.limitation.CreateCost;
+import top.mrxiaom.sweet.playermarket.database.MarketplaceDatabase;
+import top.mrxiaom.sweet.playermarket.economy.IEconomy;
+import top.mrxiaom.sweet.playermarket.func.ItemSerializerManager;
+import top.mrxiaom.sweet.playermarket.func.LimitationManager;
+import top.mrxiaom.sweet.playermarket.func.NoticeManager;
+import top.mrxiaom.sweet.playermarket.func.OutdateTimeManager;
+import top.mrxiaom.sweet.playermarket.gui.GuiCreateBuyShop;
+import top.mrxiaom.sweet.playermarket.gui.GuiCreateSellShop;
+import top.mrxiaom.sweet.playermarket.utils.Utils;
+
+import java.io.StringReader;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+
+public class CreateArguments extends AbstractArguments<Player> {
+    private static final Arguments.Builder builder = Arguments.builder()
+            .addBooleanOption("menu", "-m", "--menu")
+            .addBooleanOption("serialize", "--serialize")
+            .addStringOptions("system", "-s", "--system");
+    private final boolean isMenu;
+    private final boolean isSerializeTest;
+    private final String systemName;
+    protected CreateArguments(Arguments args) {
+        super(args);
+        this.isMenu = args.getOptionBoolean("menu");
+        this.isSerializeTest = args.getOptionBoolean("serialize");
+        this.systemName = args.getOptionString("system", null);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean execute(SweetPlayerMarket plugin, Player sender) {
+        // systemName 不为 null 时，以系统身份上架商品
+        if (systemName != null && !sender.hasPermission("sweet.playermarket.create.system")) {
+            return Messages.Command.no_permission.tm(sender);
+        }
+        if (isSerializeTest && sender.hasPermission("sweet.playermarket.create.test")) {
+            ItemStack item = sender.getItemInHand();
+            if (item.getType().equals(Material.AIR)) {
+                return Messages.Command.create__no_item.tm(sender);
+            }
+            if (doSerializeTest(ItemSerializerManager.inst(), sender, item)) {
+                Messages.Command.create__test_serialize_pass.tm(sender);
+            }
+            return true;
+        }
+        // 商品类型
+        EnumMarketType type = nextValueOf(EnumMarketType.class);
+        if (type == null) {
+            return Messages.Command.create__no_type_found.tm(sender);
+        }
+        // 打开菜单
+        if (isMenu) {
+            plugin.getScheduler().runTask(() -> {
+                switch (type) {
+                    case SELL:
+                        GuiCreateSellShop.open(sender, systemName);
+                        break;
+                    case BUY:
+                        GuiCreateBuyShop.open(sender, systemName);
+                        break;
+                }
+            });
+            return true;
+        }
+        ItemStack item = sender.getItemInHand();
+        if (item.getType().equals(Material.AIR)) {
+            return Messages.Command.create__no_item.tm(sender);
+        }
+        // 商品单价
+        double price = nextDouble(0.0, 0.0);
+        if (price < 0.01) {
+            return Messages.Command.create__no_price_valid.tm(sender);
+        }
+        // 商品货币类型
+        IEconomy currency = nextOptional(currencyName -> {
+            if (currencyName == null) {
+                IEconomy parsed = plugin.parseEconomy(CommandMain.inst().defaultCurrency());
+                if (parsed != null) {
+                    return parsed;
+                }
+                Messages.Command.create__no_currency_default.tm(sender);
+            } else {
+                IEconomy parsed = plugin.parseEconomy(currencyName);
+                if (parsed != null) {
+                    return parsed;
+                }
+                Messages.Command.create__no_currency_found.tm(sender);
+            }
+            return null;
+        });
+        if (currency == null) return true;
+        // 单份商品的物品数量
+        Integer itemCount = nextInt(item::getAmount, NULL());
+        // 商品总份数
+        Integer marketAmount = nextInt(() -> 1, NULL());
+
+        plugin.getScheduler().runTask(() -> doDeployMarketItem(plugin, sender, systemName, item, itemCount, marketAmount, type, price, currency, null));
+        return true;
+    }
+
+    private static boolean doSerializeTest(ItemSerializerManager itemSerializer, Player sender, ItemStack item) {
+        try {
+            // 序列化测试
+            YamlConfiguration config = new YamlConfiguration();
+            itemSerializer.setItem(config, item);
+            String str = config.saveToString();
+            // 反序列化测试
+            YamlConfiguration newConfig = new YamlConfiguration();
+            newConfig.load(new StringReader(str));
+            if (!item.equals(itemSerializer.getItem(newConfig))) {
+                throw new IllegalStateException("无法反序列化该物品");
+            }
+            return true;
+        } catch (Throwable t) {
+            Messages.Command.create__no_valid_item.tm(sender, Pair.of("%message%", t.getMessage()));
+            return false;
+        }
+    }
+
+    public static void doDeployMarketItem(
+            SweetPlayerMarket plugin, Player sender,
+            ItemStack item, Integer itemCount,
+            Integer marketAmount, EnumMarketType type,
+            double price, IEconomy currency,
+            @Nullable Consumer<MarketItem> callback
+    ) {
+        doDeployMarketItem(plugin, sender, null, item, itemCount, marketAmount, type, price, currency, callback);
+    }
+
+    public static void doDeployMarketItem(
+            SweetPlayerMarket plugin, Player sender, @Nullable String systemName,
+            ItemStack item, Integer itemCount,
+            Integer marketAmount, EnumMarketType type,
+            double price, IEconomy currency,
+            @Nullable Consumer<MarketItem> callback
+    ) {
+        if (systemName != null && !sender.hasPermission("sweet.playermarket.create.system")) {
+            Messages.Command.no_permission.tm(sender);
+            if (callback != null) callback.accept(null);
+            return;
+        }
+        // 商品单价
+        if (price < 0.01) {
+            Messages.Command.create__no_price_valid.tm(sender);
+            if (callback != null) callback.accept(null);
+            return;
+        }
+        // 货币使用权限限制
+        if (!currency.hasPermission(sender)) {
+            Messages.Command.create__no_currency_permission.tm(sender);
+            if (callback != null) callback.accept(null);
+            return;
+        }
+        // 单份商品的物品数量
+        if (itemCount == null) {
+            Messages.Command.create__no_item_count_valid.tm(sender);
+            if (callback != null) callback.accept(null);
+            return;
+        }
+        if (itemCount > item.getMaxStackSize()) {
+            Messages.Command.create__no_item_count_valid_stack.tm(sender);
+            if (callback != null) callback.accept(null);
+            return;
+        }
+        if (itemCount > item.getAmount()) {
+            Messages.Command.create__no_item_count_valid_held.tm(sender);
+            if (callback != null) callback.accept(null);
+            return;
+        }
+
+        // 商品总份数
+        if (marketAmount == null || marketAmount < 1 || marketAmount > 64) {
+            Messages.Command.create__no_amount_valid.tm(sender);
+            if (callback != null) callback.accept(null);
+            return;
+        }
+
+        // 测试物品序列化
+        ItemSerializerManager itemSerializer = ItemSerializerManager.inst();
+        if (itemSerializer.isCheckOnCreate() && !doSerializeTest(itemSerializer, sender, item)) {
+            if (callback != null) callback.accept(null);
+            return;
+        }
+
+        // 检查商品上架条件
+        BaseLimitation limitation = LimitationManager.inst().getLimitation(item, currency);
+        if (!sender.hasPermission("sweet.playermarket.create.bypass.type") && !limitation.canUseMarketType(type)) {
+            Messages.Command.create__limitation__type_not_allow.tm(sender);
+            if (callback != null) callback.accept(null);
+            return;
+        }
+        if (!sender.hasPermission("sweet.playermarket.create.bypass.currency") && !limitation.canUseCurrency(currency)) {
+            Messages.Command.create__limitation__currency_not_allow.tm(sender,
+                    Pair.of("%currency%", plugin.displayNames().getCurrencyName(currency)));
+            if (callback != null) callback.accept(null);
+            return;
+        }
+        // 检查玩家是否有足够的手续费
+        double totalPrice = price * marketAmount;
+        CreateCost createCost = limitation.getCreateCost(type);
+        Map<IEconomy, Double> createCostMap = new HashMap<>();
+        if (!sender.hasPermission("sweet.playermarket.create.bypass.cost") && createCost != null) {
+            createCost.collectCosts(createCostMap, currency, totalPrice);
+            for (Map.Entry<IEconomy, Double> entry : createCostMap.entrySet()) {
+                IEconomy costCurrency = entry.getKey();
+                double createCostMoney = entry.getValue();
+                if (createCostMoney > 0 && !costCurrency.has(sender, createCostMoney)) {
+                    Messages.Command.create__limitation__create_cost_failed.tm(sender,
+                            Pair.of("%currency%", plugin.displayNames().getCurrencyName(costCurrency)),
+                            Pair.of("%money%", plugin.displayNames().formatMoney(createCostMoney)));
+                    if (callback != null) callback.accept(null);
+                    return;
+                }
+            }
+        }
+
+        OutdateTime outdateTime = OutdateTimeManager.inst().get(sender);
+
+        ItemStack shopItem = item.clone();
+        shopItem.setAmount(itemCount);
+        MarketItemBeforeCreateEvent event = new MarketItemBeforeCreateEvent(MarketItem.builder("not-deployed", sender)
+                .item(shopItem)
+                .type(type)
+                .price(price)
+                .currency(currency)
+                .amount(marketAmount)
+                .outdateTime(outdateTime.get(type))
+                .build(plugin.itemTagResolver()), sender);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            if (callback != null) callback.accept(null);
+            return;
+        }
+
+        // 上架操作需要调用数据库，异步执行以免卡服
+        plugin.getScheduler().runTaskAsync(() -> doDeployMarketItemAsync(
+                plugin, sender, systemName,
+                item, itemCount,
+                marketAmount, type,
+                createCost, currency,
+                totalPrice, createCostMap, price,
+                outdateTime, callback
+        ));
+    }
+
+    private static void doDeployMarketItemAsync(
+            SweetPlayerMarket plugin, Player sender, @Nullable String systemName,
+            ItemStack item, int itemCount,
+            int marketAmount, EnumMarketType type,
+            CreateCost createCost, IEconomy currency,
+            double totalPrice, Map<IEconomy, Double> createCostMap, double price,
+            OutdateTime outdateTime, @Nullable Consumer<MarketItem> callback
+    ) {
+        MarketItem marketItem;
+        try (Connection conn = plugin.getConnection()) {
+            MarketplaceDatabase db = plugin.getMarketplace();
+            String shopId = db.createNewId(conn);
+            if (shopId == null) {
+                Messages.Command.create__failed_db.tm(sender);
+                if (callback != null) {
+                    plugin.getScheduler().runTask(() -> callback.accept(null));
+                }
+                return;
+            }
+
+            if (!sender.isOnline()) {
+                plugin.warn("玩家 " + sender.getName() + " 试图在上架商品前离开游戏，取消上架商品");
+                if (callback != null) {
+                    plugin.getScheduler().runTask(() -> callback.accept(null));
+                }
+                return;
+            }
+
+            ItemStack shopItem = item.clone();
+            shopItem.setAmount(itemCount);
+
+            int totalAmount = itemCount * marketAmount;
+            switch (type) {
+                case SELL: {
+                    // 出售商店，检查玩家背包里有没有这么多的物品，并拿走这些物品
+                    int invAmount = Utils.getItemAmount(sender, shopItem);
+                    if (invAmount < totalAmount) {
+                        Messages.Command.create__sell__no_enough_items.tm(sender);
+                        if (callback != null) {
+                            plugin.getScheduler().runTask(() -> callback.accept(null));
+                        }
+                        return;
+                    }
+                    Utils.takeItem(sender, shopItem, totalAmount);
+                    break;
+                }
+                case BUY: {
+                    // 收购商店，收取玩家指定类型的货币
+                    if (!currency.has(sender, totalPrice)) {
+                        Messages.Command.create__buy__no_enough_currency.tm(sender);
+                        if (callback != null) {
+                            plugin.getScheduler().runTask(() -> callback.accept(null));
+                        }
+                        return;
+                    }
+                    if (!currency.takeMoney(sender, totalPrice)) {
+                        Messages.Command.create__buy__no_enough_currency.tm(sender);
+                        if (callback != null) {
+                            plugin.getScheduler().runTask(() -> callback.accept(null));
+                        }
+                        return;
+                    }
+                    break;
+                }
+                default: {
+                    Messages.Command.create__no_type_found.tm(sender);
+                    if (callback != null) {
+                        plugin.getScheduler().runTask(() -> callback.accept(null));
+                    }
+                    return;
+                }
+            }
+
+            // 扣除手续费
+            for (Map.Entry<IEconomy, Double> entry : createCostMap.entrySet()) {
+                IEconomy costCurrency = entry.getKey();
+                double createCostMoney = entry.getValue();
+                if (createCostMoney > 0 && !costCurrency.takeMoney(sender, createCostMoney)) {
+                    // TODO: 保持事务一致性
+                    Messages.Command.create__limitation__create_cost_failed.tm(sender,
+                            Pair.of("%currency%", plugin.displayNames().getCurrencyName(costCurrency)),
+                            Pair.of("%money%", plugin.displayNames().formatMoney(createCostMoney)));
+                    if (callback != null) {
+                        plugin.getScheduler().runTask(() -> callback.accept(null));
+                    }
+                    return;
+                }
+            }
+
+            if (!sender.isOnline()) {
+                plugin.warn("玩家 " + sender.getName() + " 试图在上架商品时离开游戏，取消上架商品");
+                if (callback != null) {
+                    plugin.getScheduler().runTask(() -> callback.accept(null));
+                }
+                return;
+            }
+
+            // 将商品信息提交到数据库
+            MarketItemBuilder builder = systemName == null
+                    ? MarketItem.builder(shopId, sender)
+                    : MarketItem.systemBuilder(systemName);
+            marketItem = builder
+                    .item(shopItem)
+                    .type(type)
+                    .price(price)
+                    .currency(currency)
+                    .amount(marketAmount)
+                    .outdateTime(outdateTime.get(type))
+                    .build(plugin.itemTagResolver());
+            db.putItem(conn, marketItem);
+        } catch (SQLException e) {
+            plugin.warn("玩家 " + sender.getName() + " 上架商品失败", e);
+            Messages.Command.create__failed.tm(sender);
+            if (callback != null) {
+                plugin.getScheduler().runTask(() -> callback.accept(null));
+            }
+            return;
+        }
+        // 通过 BungeeCord 通知其它子服已打开的界面，应该刷新全球市场菜单
+        NoticeManager.inst().updateCreated();
+        // 提示商品上架成功
+        MiniMessage miniMessage = AdventureItemStack.wrapHoverEvent(item).build();
+        Messages.Command.create__success.tm(miniMessage, sender,
+                Pair.of("%item%", plugin.displayNames().getDisplayName(item, sender)));
+
+        plugin.getScheduler().runTask(() -> {
+            if (callback != null) {
+                callback.accept(marketItem);
+            }
+            MarketItemCreatedEvent e = new MarketItemCreatedEvent(marketItem, sender);
+            Bukkit.getPluginManager().callEvent(e);
+        });
+    }
+
+    public static CreateArguments of(String[] args) {
+        return builder.build(CreateArguments::new, args);
+    }
+}

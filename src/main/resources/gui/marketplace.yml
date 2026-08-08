@@ -1,0 +1,148 @@
+title: '全球市场 - %page%/%max_page% 页'
+inventory:
+  - '框框框框框框框框框'
+  - '框物物物物物物物框'
+  - '框物物物物物物物框'
+  - '框物物物物物物物框'
+  - '框框框框框框框框框'
+  - '上　类币刷序发拍下'
+main-icons:
+  物:
+    display: '&e&l%display%'
+    lore:
+      - item lore
+      - ''
+      - '  &f商家: &e%player%'
+      - '  &f类型: &e%type% x %amount%  '
+      - '  &f单价: &e%price% %currency%  '
+      - '  &f上架时间: &e%create_time%  '
+      - '  &f过期时间: &e%outdate_time%  '
+      - ''
+      - '&a左键 &7| &f下单并结算'
+      - '$if:(%is_market_admin%)$ &b右键 &7| &f管理员下架商品'
+    left-click-commands:
+      - '[confirm]'
+    right-click-commands:
+      - '[take-down-by-admin]'
+  # 这个图标仅在 can-buy-self-items 为 false 时可见
+  物_自己:
+    display: '&e&l%display%'
+    lore:
+      - item lore
+      - ''
+      - '  &f商家: &e%player%'
+      - '  &f类型: &e%type% x %amount%  '
+      - '  &f单价: &e%price% %currency%  '
+      - '  &f上架时间: &e%create_time%  '
+      - '  &f过期时间: &e%outdate_time%  '
+      - ''
+      - '$if:(%amount% > 0)$ &a左键 &7| &f下架商品'
+    left-click-commands:
+      - '[take-down]'
+  空:
+    material: AIR
+other-icons:
+  框:
+    material: WHITE_STAINED_GLASS_PANE
+    display: '&f'
+  上:
+    material: ARROW
+    display: '&e&l上一页'
+    left-click-commands:
+      - '[page]-1'
+  下:
+    material: ARROW
+    display: '&e&l下一页'
+    left-click-commands:
+      - '[page]+1'
+  类:
+    material: DIAMOND
+    display: '&e&l分类'
+    lore:
+      - ''
+      - '  &f商品分类: &e%search_tag%  '
+      - '  &f查看%search_type%&f商店  '
+      - ''
+      - '&a左键 &7| &f选择商品分类'
+      - '&b左键 &7| &f查看所有类型'
+      - '&eShift+左键 &7| &f查看出售类型'
+      - '&dShift+右键 &7| &f查看收购类型'
+    left-click-commands:
+      - '[search:tag]::list::'
+    right-click-commands:
+      - '[search:type]none'
+    shift-left-click-commands:
+      - '[search:type]sell'
+    shift-right-click-commands:
+      - '[search:type]buy'
+  币:
+    material: GOLD_INGOT
+    display: '&e&l筛选货币'
+    lore:
+      - ''
+      - '  &f当前筛选货币: &e%search_currency%  '
+      - ''
+      - '&a左键 &7| &f切换筛选货币'
+    left-click-commands:
+      - '[search:currency]next'
+      #- '[search:currency]Vault'
+      #- '[search:currency]PlayerPoints'
+      #- '[search:currency]MPoints:sign'
+  刷:
+    material: SNOWBALL
+    display: '&e&l刷新'
+    lore:
+      - ''
+      - '&a左键 &7| &f刷新商店菜单'
+      - '&b右键 &7| &f查看我的商品列表'
+      - ''
+      - '  &f关键词: &e%search_keyword%'
+      - ''
+      - '&eShift+左键 &7| &f按关键词搜索商品'
+      - '&dShift+右键 &7| &f清空关键词'
+    left-click-commands:
+      - '[refresh]'
+    right-click-commands:
+      - '[player]sweetplayermarket me'
+    shift-left-click-commands:
+      - '[search:keyword]'
+    shift-right-click-commands:
+      - '[search:keyword]reset'
+  序:
+    material: COMPASS
+    display: '&e&l排序'
+    lore:
+      - ''
+      - '  &f排序依据: &e%search_sort_column%  '
+      - '  &f排序方式: &e%search_sort_type%  '
+      - ''
+      - '&a左键 &7| &f切换排序依据'
+      - '&b右键 &7| &f切换排序方式'
+    left-click-commands:
+      - '[search:sort]column'
+    right-click-commands:
+      - '[search:sort]type'
+  发:
+    material: HOPPER
+    display: '&e&l上架商品'
+    lore:
+      - ''
+      - '  &f将商品上架到全球市场  '
+      - ''
+      - '&a左键 &7| &f我要出售物品'
+      - '&b右键 &7| &f我要收购物品'
+    left-click-commands:
+      - '[player]playermarket create sell --menu'
+    right-click-commands:
+      - '[player]playermarket create buy --menu'
+  拍:
+    material: GOLD_BLOCK
+    display: '&6&l拍卖行'
+    lore:
+      - ''
+      - '  &f进入拍卖行：竞拍、一口价、自动延期  '
+      - '  &f创建拍卖 / 我的拍卖 / 竞拍记录  '
+      - ''
+      - '&a左键 &7| &f打开拍卖行'
+    left-click-commands:
+      - '[auction-open:main]'

@@ -1,0 +1,69 @@
+# 拍卖主菜单
+title: '<gradient:gold:yellow><bold>⚒ 拍卖行</bold></gradient>'
+inventory:
+  - '#########'
+  - '#       #'
+  - '#  拍   #'
+  - '#       #'
+  - '#       #'
+  - '#览我记创#'
+
+main-icons:
+  拍:
+    material: GOLD_BLOCK
+    display: '&6&l⚒ 拍卖行'
+    lore:
+      - ''
+      - '&7在这里拍卖、竞拍、一口价'
+      - '&7支持自动延期与手续费结算'
+      - ''
+      - '&a点击下方按钮进入对应功能'
+  空:
+    material: GRAY_STAINED_GLASS_PANE
+    display: '&8·'
+
+other-icons:
+  览:
+    material: CHEST
+    display: '&e&l浏览拍卖'
+    lore:
+      - ''
+      - '&7查看全服正在进行的拍卖'
+      - '&7支持分页、排序与分类'
+      - ''
+      - '&a左键 &7| &f打开'
+    left-click-commands:
+      - '[auction-open:list]'
+  我:
+    material: BOOK
+    display: '&d&l我的拍卖'
+    lore:
+      - ''
+      - '&7管理你上架的拍卖'
+      - '&7取消、领取成交款与流拍物品'
+      - ''
+      - '&a左键 &7| &f打开'
+    left-click-commands:
+      - '[auction-open:my]'
+  记:
+    material: WRITABLE_BOOK
+    display: '&6&l竞拍记录'
+    lore:
+      - ''
+      - '&7查看你出价过/拍得的拍卖'
+      - '&7领取拍得物品'
+      - ''
+      - '&a左键 &7| &f打开'
+    left-click-commands:
+      - '[auction-open:bids]'
+  创:
+    material: ANVIL
+    display: '&2&l创建拍卖'
+    lore:
+      - ''
+      - '&7手持物品，设置起拍价/一口价/时长'
+      - '&7支持自动延期'
+      - ''
+      - '&a左键 &7| &f打开'
+    left-click-commands:
+      - '[auction-open:create]'

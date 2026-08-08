@@ -1,0 +1,505 @@
+package top.mrxiaom.sweet.playermarket;
+
+import de.tr7zw.changeme.nbtapi.utils.MinecraftVersion;
+import me.yic.mpoints.MPointsAPI;
+import net.milkbowl.vault.economy.Economy;
+import org.black_ixx.playerpoints.PlayerPoints;
+import org.black_ixx.playerpoints.PlayerPointsAPI;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.RegisteredServiceProvider;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import top.mrxiaom.pluginbase.BukkitPlugin;
+import top.mrxiaom.pluginbase.actions.ActionProviders;
+import top.mrxiaom.pluginbase.api.IAction;
+import top.mrxiaom.pluginbase.api.IRegistry;
+import top.mrxiaom.pluginbase.data.SimpleRegistry;
+import top.mrxiaom.pluginbase.func.LanguageManager;
+import top.mrxiaom.pluginbase.paper.PaperFactory;
+import top.mrxiaom.pluginbase.resolver.DefaultLibraryResolver;
+import top.mrxiaom.pluginbase.utils.ClassLoaderWrapper;
+import top.mrxiaom.pluginbase.utils.ConfigUtils;
+import top.mrxiaom.pluginbase.utils.Pair;
+import top.mrxiaom.pluginbase.utils.Util;
+import top.mrxiaom.pluginbase.utils.inventory.InventoryFactory;
+import top.mrxiaom.pluginbase.utils.item.ItemEditor;
+import top.mrxiaom.sweet.playermarket.actions.*;
+import top.mrxiaom.sweet.playermarket.api.HookHandler;
+import top.mrxiaom.sweet.playermarket.api.IEconomyResolver;
+import top.mrxiaom.sweet.playermarket.api.ItemTagResolver;
+import top.mrxiaom.sweet.playermarket.api.MarketAPI;
+import top.mrxiaom.sweet.playermarket.api.hook.OpenGuiHook;
+import top.mrxiaom.sweet.playermarket.api.item.ItemNameProvider;
+import top.mrxiaom.sweet.playermarket.api.item.ItemProvider;
+import top.mrxiaom.sweet.playermarket.api.item.VanillaItem;
+import top.mrxiaom.sweet.playermarket.api.item.VanillaName;
+import top.mrxiaom.sweet.playermarket.data.DisplayNames;
+import top.mrxiaom.sweet.playermarket.data.MarketItem;
+import top.mrxiaom.sweet.playermarket.data.MarketItemBuilder;
+import top.mrxiaom.sweet.playermarket.database.MarketplaceDatabase;
+import top.mrxiaom.sweet.playermarket.database.TradeLogsDatabase;
+import top.mrxiaom.sweet.playermarket.economy.*;
+import top.mrxiaom.sweet.playermarket.func.CurrencyManager;
+import top.mrxiaom.sweet.playermarket.func.I18nManager;
+import top.mrxiaom.sweet.playermarket.utils.Utils;
+
+import java.io.File;
+import java.net.URL;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.*;
+import java.util.function.Consumer;
+
+public class SweetPlayerMarket extends BukkitPlugin {
+    public static SweetPlayerMarket getInstance() {
+        return (SweetPlayerMarket) BukkitPlugin.getInstance();
+    }
+
+    public static MarketAPI api() {
+        return getInstance().api;
+    }
+
+    public SweetPlayerMarket() throws Exception {
+        super(options()
+                .adventure(true)
+                .bungee(true)
+                .database(true)
+                .reconnectDatabaseWhenReloadConfig(false)
+                .scanIgnore("top.mrxiaom.sweet.playermarket.libs")
+        );
+        try {
+            //noinspection ResultOfMethodCallIgnored
+            getDescription().getLibraries();
+        } catch (LinkageError ignored) {
+            info("正在检查依赖库状态");
+            File librariesDir = ClassLoaderWrapper.isSupportLibraryLoader
+                    ? new File("libraries")
+                    : new File(this.getDataFolder(), "libraries");
+            DefaultLibraryResolver resolver = new DefaultLibraryResolver(getLogger(), librariesDir);
+
+            YamlConfiguration overrideLibraries = ConfigUtils.load(resolve("./.override-libraries.yml"));
+            for (String key : overrideLibraries.getKeys(false)) {
+                resolver.getStartsReplacer().put(key, overrideLibraries.getString(key));
+            }
+            resolver.addResolvedLibrary(BuildConstants.RESOLVED_LIBRARIES);
+
+            List<URL> libraries = resolver.doResolve();
+            info("正在添加 " + libraries.size() + " 个依赖库到类加载器");
+            for (URL library : libraries) {
+                this.classLoader.addURL(library);
+            }
+        }
+    }
+    private final API api = new API();
+    private final List<IEconomyResolver> economyResolvers = new ArrayList<>();
+    private final List<ItemProvider> itemProviders = new ArrayList<>();
+    private final List<ItemNameProvider> itemNameProviders = new ArrayList<>();
+    private boolean onlineMode;
+    private IEconomy vault;
+    private IEconomy playerPoints;
+    private IEconomyWithSign mPoints;
+    private IEconomyWithSign coinsEngine;
+    private IEconomyWithSign customEconomy;
+    private ItemTagResolver itemTagResolver = item -> "default";
+    private MarketplaceDatabase marketplaceDatabase;
+    private TradeLogsDatabase tradeLogsDatabase;
+    // ✚ XMPlayerMarketPlus：拍卖数据库
+    private top.mrxiaom.sweet.playermarket.auction.AuctionDatabase auctionDatabase;
+    private DisplayNames displayNames;
+    private DateTimeFormatter datetimeFormatter;
+    private String datetimeInfinite;
+    private boolean updateOutdateTimeWhenSoldOut;
+
+    public boolean isOnlineMode() {
+        return onlineMode;
+    }
+
+    public boolean isUpdateOutdateTimeWhenSoldOut() {
+        return updateOutdateTimeWhenSoldOut;
+    }
+
+    @Nullable
+    public IEconomy getVault() {
+        return vault;
+    }
+    @Nullable
+    public IEconomy getPlayerPoints() {
+        return playerPoints;
+    }
+    @Nullable
+    public IEconomyWithSign getMPoints() {
+        return mPoints;
+    }
+    @Nullable
+    public IEconomyWithSign getCoinsEngine() {
+        return coinsEngine;
+    }
+    @NotNull
+    public IEconomyWithSign getCustomEconomy() {
+        return customEconomy;
+    }
+    @Nullable
+    public IEconomy parseEconomy(@Nullable String str) {
+        if (str == null) {
+            return null;
+        }
+        for (IEconomyResolver resolver : economyResolvers) {
+            IEconomy economy = resolver.parse(str);
+            if (economy != null) {
+                return economy;
+            }
+        }
+        return null;
+    }
+
+    public List<IEconomyResolver> economyResolvers() {
+        return Collections.unmodifiableList(economyResolvers);
+    }
+
+    public ItemTagResolver itemTagResolver() {
+        return itemTagResolver;
+    }
+
+    public void itemTagResolver(ItemTagResolver itemTagResolver) {
+        this.itemTagResolver = itemTagResolver;
+    }
+
+    public DisplayNames displayNames() {
+        return displayNames;
+    }
+
+    public void registerItemProvider(@NotNull ItemProvider provider) {
+        itemProviders.add(provider);
+        itemProviders.sort(Comparator.comparingInt(ItemProvider::priority));
+    }
+
+    public void unregisterItemProvider(@NotNull ItemProvider provider) {
+        itemProviders.remove(provider);
+        itemProviders.sort(Comparator.comparingInt(ItemProvider::priority));
+    }
+
+    public void registerItemNameProvider(@NotNull ItemNameProvider provider) {
+        itemNameProviders.add(provider);
+        itemNameProviders.sort(Comparator.comparingInt(ItemNameProvider::priority));
+    }
+
+    public void unregisterItemNameProvider(@NotNull ItemNameProvider provider) {
+        itemNameProviders.remove(provider);
+        itemNameProviders.sort(Comparator.comparingInt(ItemNameProvider::priority));
+    }
+
+    public @Nullable ItemStack getItem(String inputText) {
+        for (ItemProvider provider : itemProviders) {
+            ItemStack item = provider.get(inputText);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    public @Nullable String getItemDisplayName(ItemStack item) {
+        for (ItemNameProvider provider : itemNameProviders) {
+            String name = provider.getDisplayName(item);
+            if (name != null) {
+                return name;
+            }
+        }
+        return null;
+    }
+
+    @NotNull
+    public MarketplaceDatabase getMarketplace() {
+        return marketplaceDatabase;
+    }
+
+    @NotNull
+    public TradeLogsDatabase getTradeLogs() {
+        return tradeLogsDatabase;
+    }
+
+    @Override
+    public @NotNull ItemEditor initItemEditor() {
+        return PaperFactory.createItemEditor();
+    }
+
+    @Override
+    public @NotNull InventoryFactory initInventoryFactory() {
+        return PaperFactory.createInventoryFactory();
+    }
+
+    @Override
+    protected void beforeLoad() {
+        MinecraftVersion.replaceLogger(getLogger());
+        MinecraftVersion.disableUpdateCheck();
+        MinecraftVersion.disableBStats();
+        MinecraftVersion.getVersion();
+
+        registerItemProvider(VanillaItem.INSTANCE);
+        registerItemNameProvider(VanillaName.INSTANCE);
+        new I18nManager(this);
+    }
+
+    @Override
+    protected void beforeEnable() {
+        options.registerDatabase(
+                this.marketplaceDatabase = new MarketplaceDatabase(this),
+                this.tradeLogsDatabase = new TradeLogsDatabase(this)
+        );
+        // ✚ XMPlayerMarketPlus：注册拍卖数据库（auctions + auction_bids 表）
+        options.registerDatabase(this.auctionDatabase = new top.mrxiaom.sweet.playermarket.auction.AuctionDatabase(this));
+
+        LanguageManager.inst()
+                .setLangFile("messages.yml")
+                .register(Messages.class)
+                .register(Messages.Notice.class)
+                .register(Messages.Command.class)
+                .register(Messages.TabComplete.class)
+                .register(Messages.Gui.class)
+                // ✚ XMPlayerMarketPlus：注册拍卖消息
+                .register(top.mrxiaom.sweet.playermarket.auction.AuctionMessages.class)
+                .reload();
+
+        initEconomy();
+
+        ActionProviders.registerActionProviders(
+                ActionPage.PROVIDER, ActionRefresh.PROVIDER, ActionBack.PROVIDER,
+                ActionSearchCurrency.PROVIDER, ActionSearchNotice.PROVIDER,
+                ActionSearchOutdate.PROVIDER, ActionSearchOutOfStock.PROVIDER,
+                ActionSearchSort.PROVIDER, ActionSearchTag.PROVIDER,
+                ActionSearchType.PROVIDER, ActionSearchKeyword.PROVIDER, ActionConfirmCount.PROVIDER,
+                ActionOpenConfirmGui.PROVIDER, ActionClaim.PROVIDER,
+                ActionTakeDown.PROVIDER, ActionTakeDownByAdmin.PROVIDER,
+                ActionDeployCount.PROVIDER, ActionDeployPrice.PROVIDER, ActionDeployCurrency.PROVIDER,
+                ActionPreviewItem.PROVIDER,
+                // ✚ XMPlayerMarketPlus：拍卖动作
+                top.mrxiaom.sweet.playermarket.actions.ActionAuctionOpen.PROVIDER,
+                top.mrxiaom.sweet.playermarket.actions.ActionAuctionPage.PROVIDER,
+                top.mrxiaom.sweet.playermarket.actions.ActionAuctionSort.PROVIDER,
+                top.mrxiaom.sweet.playermarket.actions.ActionAuctionBid.PROVIDER,
+                top.mrxiaom.sweet.playermarket.actions.ActionAuctionBuyNow.PROVIDER,
+                top.mrxiaom.sweet.playermarket.actions.ActionAuctionCancel.PROVIDER,
+                top.mrxiaom.sweet.playermarket.actions.ActionAuctionClaim.PROVIDER
+        );
+    }
+
+    private void initEconomy() {
+        List<String> loadedEconomies = new ArrayList<>();
+        try {
+            // Vault
+            if (Util.isPresent("net.milkbowl.vault.economy.Economy")) {
+                RegisteredServiceProvider<Economy> service = Bukkit.getServicesManager().getRegistration(Economy.class);
+                Economy provider = service == null ? null : service.getProvider();
+                if (provider != null) {
+                    vault = new VaultEconomy(provider);
+                    economyResolvers.add(new VaultEconomy.Resolver(this));
+                    loadedEconomies.add(vault.getName());
+                } else {
+                    warn("已发现 Vault，但经济插件未加载，无法挂钩经济插件");
+                }
+            }
+        } catch (LinkageError ignored) {
+        }
+        try {
+            // PlayerPoints
+            if (Util.isPresent("org.black_ixx.playerpoints.PlayerPointsAPI")) {
+                PlayerPointsAPI api = PlayerPoints.getInstance().getAPI();
+                playerPoints = new PlayerPointsEconomy(api);
+                economyResolvers.add(new PlayerPointsEconomy.Resolver(this));
+                loadedEconomies.add(playerPoints.getName());
+            }
+        } catch (LinkageError ignored) {
+        }
+        try {
+            // MPoints
+            if (Util.isPresent("me.yic.mpoints.MPointsAPI")) {
+                mPoints = new MPointsEconomy(new MPointsAPI(), null);
+                economyResolvers.add(new MPointsEconomy.Resolver(this));
+                loadedEconomies.add(mPoints.getName());
+            }
+        } catch (LinkageError ignored) {
+        }
+        try {
+            // CoinsEngine
+            if (Util.isPresent("su.nightexpress.coinsengine.api.CoinsEngineAPI")) {
+                coinsEngine = new CoinsEngineEconomy(null);
+                economyResolvers.add(new CoinsEngineEconomy.Resolver(this));
+                loadedEconomies.add(coinsEngine.getName());
+            }
+        } catch (LinkageError ignored) {
+        }
+        for (String name : loadedEconomies) {
+            info("已挂钩经济插件 " + name);
+        }
+        // 自定义配置经济
+        CurrencyManager manager = new CurrencyManager(this);
+        customEconomy = new CustomEconomy(manager, null);
+        economyResolvers.add(new CustomEconomy.Resolver(manager));
+    }
+
+    @Override
+    protected void beforeReloadConfig(FileConfiguration config) {
+        if (displayNames == null) {
+            displayNames = DisplayNames.inst();
+        }
+        String onlineMode = config.getString("online-mode", "auto").toLowerCase();
+        switch (onlineMode) {
+            case "true":
+                this.onlineMode = true;
+                break;
+            case "false":
+                this.onlineMode = false;
+                break;
+            case "auto":
+            default:
+                this.onlineMode = Bukkit.getServer().getOnlineMode();
+                break;
+        }
+        try {
+            String string = config.getString("datetime.format", "yyyy-MM-dd HH:mm:ss");
+            datetimeFormatter = DateTimeFormatter.ofPattern(string);
+        } catch (DateTimeParseException e) {
+            datetimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+            warn("加载 datetime.format 时发现格式错误，已切换回默认格式");
+        }
+        datetimeInfinite = config.getString("datetime.infinite", "无期限");
+        updateOutdateTimeWhenSoldOut = config.getBoolean("", true);
+    }
+
+    @Override
+    protected void afterEnable() {
+        getMarketplace().fetchAllCountCache();
+        getLogger().info("SweetPlayerMarket 加载完毕");
+    }
+
+    @Override
+    protected void afterDisable() {
+        api.openGuiHookRegistry.unregisterAll();
+    }
+
+    @NotNull
+    public String toString(@Nullable LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return datetimeInfinite;
+        } else {
+            return dateTime.format(datetimeFormatter);
+        }
+    }
+
+    public String getKey(Player player) {
+        if (onlineMode) {
+            return player.getUniqueId().toString();
+        } else {
+            return player.getName();
+        }
+    }
+
+    @Nullable
+    public String getOfflineKey(OfflinePlayer player) {
+        Player p = player.getPlayer();
+        if (p != null) {
+            return getKey(p);
+        }
+        if (onlineMode) {
+            return player.getUniqueId().toString();
+        } else {
+            return player.getName();
+        }
+    }
+
+    public Player getPlayer(String key) {
+        if (onlineMode) {
+            UUID uuid = Utils.parseUUID(key);
+            return Util.getOnlinePlayer(uuid).orElse(null);
+        } else {
+            return Util.getOnlinePlayer(key).orElse(null);
+        }
+    }
+
+    public OfflinePlayer getOfflinePlayer(String key) {
+        if (onlineMode) {
+            UUID uuid = Utils.parseUUID(key);
+            return Util.getOfflinePlayer(uuid).orElse(null);
+        } else {
+            return Util.getOfflinePlayer(key).orElse(null);
+        }
+    }
+
+    public void run(Player player, List<IAction> actions) {
+        try {
+            ActionProviders.run(this, player, actions);
+        } catch (Throwable t) {
+            warn("执行操作时出现异常", t);
+        }
+    }
+
+    public void run(Player player, List<IAction> actions, List<Pair<String, Object>> r) {
+        try {
+            ActionProviders.run(this, player, actions, r);
+        } catch (Throwable t) {
+            warn("执行操作时出现异常", t);
+        }
+    }
+
+    public class API implements MarketAPI {
+        IRegistry<HookHandler<OpenGuiHook>> openGuiHookRegistry = new SimpleRegistry<>();
+        private API() {}
+
+        @ApiStatus.Internal
+        public void callOpenGuiHook(OpenGuiHook hook) {
+            for (HookHandler<OpenGuiHook> handler : openGuiHookRegistry.all()) {
+                handler.invoke(hook);
+            }
+        }
+
+        @Override
+        public void hookGuiOpen(HookHandler<OpenGuiHook> handler) {
+            openGuiHookRegistry.register(handler);
+        }
+
+        @Override
+        public void unhookGuiOpen(HookHandler<OpenGuiHook> handler) {
+            openGuiHookRegistry.unregister(handler);
+        }
+
+        @Override
+        public void registerEconomy(IEconomyResolver resolver) {
+            economyResolvers.add(resolver);
+            economyResolvers.sort(Comparator.comparing(IEconomyResolver::priority));
+        }
+
+        @Override
+        public MarketItem deploy(Player owner, Consumer<MarketItemBuilder> consumer) {
+            String playerId = getKey(owner);
+            String playerName = owner.getName();
+            return deploy(playerId, playerName, consumer);
+        }
+
+        @Override
+        public MarketItem deploy(String playerId, String playerName, Consumer<MarketItemBuilder> consumer) {
+            try (Connection conn = getConnection()) {
+                MarketplaceDatabase db = getMarketplace();
+                String shopId = db.createNewId(conn);
+                if (shopId == null) {
+                    throw new IllegalStateException("无法创建新的商品ID，请稍后再试");
+                }
+                MarketItemBuilder builder = MarketItem.builder(shopId, playerId, playerName);
+                consumer.accept(builder);
+                MarketItem item = builder.build(itemTagResolver);
+                db.putItem(conn, item);
+                return item;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+}

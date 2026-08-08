@@ -1,0 +1,220 @@
+package top.mrxiaom.sweet.playermarket.gui;
+
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.ItemStack;
+import top.mrxiaom.pluginbase.api.InventoryViewAccessor;
+import top.mrxiaom.pluginbase.func.AutoRegister;
+import top.mrxiaom.pluginbase.utils.AdventureItemStack;
+import top.mrxiaom.pluginbase.utils.Pair;
+import top.mrxiaom.sweet.playermarket.Messages;
+import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
+import top.mrxiaom.sweet.playermarket.api.IShopSellConfirmAdapter;
+import top.mrxiaom.sweet.playermarket.api.event.MarketConfirmSellEvent;
+import top.mrxiaom.sweet.playermarket.api.hook.OpenGuiHook;
+import top.mrxiaom.sweet.playermarket.data.MarketItem;
+import top.mrxiaom.sweet.playermarket.data.MarketItemBuilder;
+import top.mrxiaom.sweet.playermarket.data.NoticeFlag;
+import top.mrxiaom.sweet.playermarket.database.MarketplaceDatabase;
+import top.mrxiaom.sweet.playermarket.economy.IEconomy;
+import top.mrxiaom.sweet.playermarket.func.NoticeManager;
+import top.mrxiaom.sweet.playermarket.func.ShopAdapterRegistry;
+import top.mrxiaom.sweet.playermarket.gui.api.AbstractGuiConfirm;
+import top.mrxiaom.sweet.playermarket.utils.Utils;
+
+import java.sql.Connection;
+import java.time.LocalDateTime;
+
+/**
+ * 菜单: 出售商店 下单付款
+ */
+@AutoRegister
+public class GuiConfirmSell extends AbstractGuiConfirm {
+    public GuiConfirmSell(SweetPlayerMarket plugin) {
+        super(plugin, "confirm-sell.yml");
+    }
+
+    public static GuiConfirmSell inst() {
+        return instanceOf(GuiConfirmSell.class);
+    }
+
+    public static void open(Player player, GuiMarketplace.Impl parent, MarketItem marketItem) {
+        OpenGuiHook.ContextConfirmSell context = new OpenGuiHook.ContextConfirmSell(parent, marketItem);
+        if (OpenGuiHook.test(player, context)) {
+            create(player, context.parent(), context.marketItem()).open();
+        }
+    }
+
+    public static Impl create(Player player, GuiMarketplace.Impl parent, MarketItem marketItem) {
+        GuiConfirmSell self = inst();
+        return self.new Impl(player, parent, marketItem);
+    }
+
+    public class Impl extends ConfirmGui {
+        private final GuiMarketplace.Impl parent;
+        protected Impl(Player player, GuiMarketplace.Impl parent, MarketItem marketItem) {
+            super(player, marketItem);
+            this.parent = parent;
+        }
+
+        @Override
+        public int getMaxCount() {
+            return marketItem.amount();
+        }
+
+        @Override
+        protected void onClickConfirm(
+                InventoryAction action, ClickType click,
+                InventoryType.SlotType slotType, int slot,
+                InventoryViewAccessor view, InventoryClickEvent event
+        ) {
+            actionLock = true;
+            if (count <= 0) {
+                Messages.Gui.sell__amount_zero.tm(player);
+                actionLock = false;
+                return;
+            }
+            plugin.getScheduler().runTaskAsync(() -> {
+                confirmSell();
+                actionLock = false;
+            });
+        }
+
+        protected void confirmSell() {
+            MarketItem marketItem;
+            IEconomy currency;
+            String currencyName;
+            double totalMoney = 0;
+            IShopSellConfirmAdapter shopAdapter = null;
+            IEconomy shouldReturnMoneyWhenException = null;
+            try (Connection conn = plugin.getConnection()) {
+                MarketplaceDatabase db = plugin.getMarketplace();
+                marketItem = db.getItem(conn, this.marketItem.shopId());
+                if (marketItem == null || marketItem.amount() == 0) {
+                    Messages.Gui.common__item_not_found.tm(player);
+                    parent.doSearch();
+                    plugin.getScheduler().runTask(parent::open);
+                    return;
+                }
+                currency = marketItem.currency();
+                currencyName = plugin.displayNames().getCurrencyName(marketItem.currencyName());
+                if (currency == null) {
+                    Messages.Gui.common__currency_not_found.tm(player, Pair.of("%currency%", currencyName));
+                    return;
+                }
+                int finalAmount = marketItem.amount() - count;
+                if (finalAmount < 0) {
+                    Messages.Gui.sell__amount_not_enough.tm(player);
+                    return;
+                }
+                totalMoney = count * marketItem.price();
+                if (!currency.has(player, totalMoney)) {
+                    Messages.Gui.sell__currency_not_enough.tm(player, Pair.of("%currency%", currencyName));
+                    return;
+                }
+
+                // 检查商品适配器设置
+                ShopAdapterRegistry.Entry entry = ShopAdapterRegistry.inst().getByMarketItem(marketItem);
+                if (entry.hasFactoryParams()) {
+                    shopAdapter = entry.getSellConfirmAdapter(marketItem, player);
+                    if (shopAdapter == null) {
+                        Messages.Gui.sell__adapter_not_found.tm(player);
+                        return;
+                    }
+                }
+
+                ConfigurationSection params = marketItem.params();
+                // 添加货币到额外参数中，让商家自行领取
+                double old = params.getDouble("sell.received-currency", 0.0);
+                params.set("sell.received-currency", old + totalMoney);
+                int oldCount = params.getInt("sell.received-count", 0);
+                params.set("sell.received-count", oldCount + count);
+
+                params.set("last-trader.uuid", player.getUniqueId().toString());
+                params.set("last-trader.name", player.getName());
+
+                // 拿走玩家的指定数量货币。由于上方已添加货币到额外参数中，不需要给予卖家货币
+                if (!currency.takeMoney(player, totalMoney)) {
+                    Messages.Gui.sell__currency_not_enough.tm(player, Pair.of("%currency%", currencyName));
+                    return;
+                }
+                shouldReturnMoneyWhenException = currency;
+                // 提交更改到数据库
+                MarketItemBuilder builder = marketItem.toBuilder()
+                        .noticeFlag(NoticeFlag.CAN_CLAIM_ITEMS)
+                        .amount(finalAmount)
+                        .params(params);
+                if (finalAmount == 0 && plugin.isUpdateOutdateTimeWhenSoldOut()) {
+                    builder.outdateTime(LocalDateTime.now());
+                }
+                MarketItem build = builder
+                        .build();
+                if (!db.modifyItem(conn, build
+                )) {
+                    Messages.Gui.sell__submit_failed.tm(player);
+                    return;
+                }
+                plugin.getTradeLogs().put(conn, build, player, count, LocalDateTime.now());
+            } catch (Throwable e) {
+                warn("玩家 " + player.getName() + " 在下单 " + Messages.getPlayerName(this.marketItem) + " 的出售商品 " + this.marketItem.shopId() + " 时出现异常", e);
+                plugin.getScheduler().closeInventory(player);
+                Messages.Gui.sell__exception.tm(player);
+                if (shouldReturnMoneyWhenException != null && totalMoney > 0) {
+                    shouldReturnMoneyWhenException.giveMoney(player, totalMoney);
+                }
+                return;
+            }
+
+            int totalCount;
+            if (shopAdapter != null) {
+                // 如果有商品适配器，则按适配器的实现来给予玩家物品
+                totalCount = shopAdapter.giveToPlayer(count);
+            } else {
+                int total = 0;
+                // 如果没有商品适配器，直接给予玩家物品
+                for (int i = 0; i < count; i++) {
+                    ItemStack item = marketItem.item();
+                    total += item.getAmount();
+                    Utils.giveItemsToPlayer(player, item);
+                }
+                totalCount = total;
+            }
+            // 获取物品名，提示玩家购买成功
+            ItemStack itemDisplay = marketItem.item();
+            MiniMessage miniMessage = AdventureItemStack.wrapHoverEvent(itemDisplay).build();
+            Messages.Gui.sell__success.tm(miniMessage, player,
+                    Pair.of("%item%", plugin.displayNames().getDisplayName(itemDisplay, player)),
+                    Pair.of("%total_count%", totalCount),
+                    Pair.of("%money%", plugin.displayNames().formatMoney(totalMoney)),
+                    Pair.of("%currency%", currencyName));
+            parent.doSearch();
+            NoticeManager.inst().confirmNotice(marketItem);
+
+            double finalTotalMoney = totalMoney;
+            plugin.getScheduler().runTask(() -> {
+                parent.open();
+                MarketConfirmSellEvent e = new MarketConfirmSellEvent(marketItem, player, count, totalCount, finalTotalMoney, currency);
+                Bukkit.getPluginManager().callEvent(e);
+            });
+        }
+
+        @Override
+        protected void onClickBack(
+                InventoryAction action, ClickType click,
+                InventoryType.SlotType slotType, int slot,
+                InventoryViewAccessor view, InventoryClickEvent event
+        ) {
+            actionLock = true;
+            plugin.getScheduler().runTaskAsync(() -> {
+                parent.doSearch();
+                plugin.getScheduler().runTask(parent::open);
+            });
+        }
+    }
+}

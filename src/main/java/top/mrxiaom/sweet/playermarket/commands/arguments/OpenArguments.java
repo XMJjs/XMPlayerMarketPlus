@@ -1,0 +1,66 @@
+package top.mrxiaom.sweet.playermarket.commands.arguments;
+
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import top.mrxiaom.pluginbase.utils.Util;
+import top.mrxiaom.pluginbase.utils.arguments.Arguments;
+import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
+import top.mrxiaom.sweet.playermarket.api.AbstractArguments;
+import top.mrxiaom.sweet.playermarket.api.hook.OpenGuiHook;
+import top.mrxiaom.sweet.playermarket.data.EnumMarketType;
+import top.mrxiaom.sweet.playermarket.data.Searching;
+import top.mrxiaom.sweet.playermarket.economy.IEconomy;
+import top.mrxiaom.sweet.playermarket.gui.GuiMarketplace;
+
+public class OpenArguments extends AbstractArguments<CommandSender> {
+    private static final Arguments.Builder builder = Arguments.builder()
+            .addStringOptions("type", "-t", "--type")
+            .addStringOptions("currency", "-c", "--currency")
+            .addStringOptions("tag", "-t", "--tag");
+    private final String type;
+    private final String currency;
+    private final String tag;
+    protected OpenArguments(Arguments arguments) {
+        super(arguments);
+        this.type = arguments.getOptionString("type", null);
+        this.currency = arguments.getOptionString("currency", null);
+        this.tag = arguments.getOptionString("tag", null);
+    }
+
+    public String type() {
+        return type;
+    }
+
+    public String currency() {
+        return currency;
+    }
+
+    public String tag() {
+        return tag;
+    }
+
+    @Override
+    public boolean execute(SweetPlayerMarket plugin, CommandSender sender) {
+        Player player = getPlayerOrSelf(sender, "sweet.playermarket.open.other");
+        if (player == null) {
+            return true;
+        }
+        IEconomy currency = plugin.parseEconomy(currency());
+        Searching searching = Searching.of(false)
+                .type(Util.valueOr(EnumMarketType.class, type(), null))
+                .currency(currency == null ? null : currency.id())
+                .tag(tag());
+        OpenGuiHook.ContextMarketplace context = new OpenGuiHook.ContextMarketplace(searching);
+        if (OpenGuiHook.test(player, context)) {
+            plugin.getScheduler().runTaskAsync(() -> {
+                GuiMarketplace.Impl gui = GuiMarketplace.create(player, context.searching());
+                plugin.getScheduler().runTask(gui::open);
+            });
+        }
+        return true;
+    }
+
+    public static OpenArguments of(String[] args) {
+        return builder.build(OpenArguments::new, args);
+    }
+}

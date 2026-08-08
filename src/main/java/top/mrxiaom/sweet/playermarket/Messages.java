@@ -1,0 +1,176 @@
+package top.mrxiaom.sweet.playermarket;
+
+import top.mrxiaom.pluginbase.func.language.Language;
+import top.mrxiaom.pluginbase.func.language.Message;
+import top.mrxiaom.sweet.playermarket.data.MarketItem;
+
+import static top.mrxiaom.pluginbase.func.language.LanguageFieldAutoHolder.field;
+
+@Language(prefix="messages.")
+public class Messages {
+
+    public static final Message player__not_online = field("&e玩家不在线 (或不存在)");
+    public static final Message player__only = field("只有玩家可以执行该命令");
+
+    public static final Message server_owner_name = field("#服务器#");
+
+    public static String getPlayerName(MarketItem item) {
+        if (item.playerId().equals("#server#") && item.playerName().isEmpty()) {
+            return server_owner_name.str();
+        } else {
+            return item.playerName();
+        }
+    }
+
+    @Language(prefix="messages.notice.")
+    public static class Notice {
+        public static final Message takedown_by_admin__content = field("&7[&e&l全球市场&r&7]&e 你的%type%&e商品&b %item%&r&e 已被&b %admin_name% &e下架");
+        public static final Message takedown_by_admin__unknown_admin = field("管理员");
+    }
+
+    @Language(prefix="messages.command.")
+    public static class Command {
+        public static final Message no_permission = field("&c你没有执行该命令的权限");
+
+        public static final Message create__no_item = field("&e请手持你要上架的物品");
+        public static final Message create__no_item_selected = field("&e请选择你要上架的物品");
+        public static final Message create__no_type_found = field("&e请输入正确的商品类型");
+        public static final Message create__no_price_valid = field("&e请输入正确的价格");
+        public static final Message create__no_currency_default = field("&e找不到默认货币类型，请联系服务器管理员");
+        public static final Message create__no_currency_found = field("&e请输入正确的货币类型");
+        public static final Message create__no_currency_permission = field("&e你没有使用该货币上架商品的权限");
+        public static final Message create__no_item_count_valid = field("&e请输入正确的单个商品的物品数量");
+        public static final Message create__no_item_count_valid_stack = field("&e请输入正确的单个商品的物品数量，你输入的数量超出了堆叠限制");
+        public static final Message create__no_item_count_valid_held = field("&e请输入正确的单个商品的物品数量，你输入的数量超出了手持物品数量");
+        public static final Message create__no_amount_valid = field("&e请输入正确的商品总份数");
+        public static final Message create__no_valid_item = field("&e该物品存在无效数据，无法上架到全球市场");
+        public static final Message create__test_serialize_pass = field("&a物品序列化反序列化测试已通过");
+        public static final Message create__limitation__type_not_allow = field("&e在上架该物品时，禁止上架到这个类型的商店");
+        public static final Message create__limitation__currency_not_allow = field("&e在上架该物品时，禁止使用%currency%上架");
+        public static final Message create__limitation__create_cost_failed = field("&e你的%currency%不足，需要支付 %money% %currency% 的上架手续费");
+        public static final Message create__sell__no_enough_items = field("&e你没有足够的物品来上架商品");
+        public static final Message create__buy__no_enough_currency = field("&e你没有足够的货币来上架商品");
+        public static final Message create__success = field("&a你已成功上架&e <item>%item%</item>&r&a 到全球市场!");
+        public static final Message create__failed_db = field("&e无法创建新的商品 ID，请稍后重试");
+        public static final Message create__failed = field("&e商品上架失败，请联系服务器管理员");
+
+        public static final Message limitation__no_item = field("&e请手持你要检查的物品");
+        public static final Message limitation__can_use_type = field("&f可以上架到: %types%");
+        public static final Message limitation__create_cost = field("&f上架到 %type%&r&f 商店需要手续费");
+
+        public static final Message recalc__tags__start = field("&a开始执行商品标签重新计算操作，请稍等…");
+        public static final Message recalc__tags__success = field("&a重新计算完成，有 %count% 个商品的标签发生变动");
+        public static final Message recalc__tags__failed = field("&e执行重新计算时出现一个错误，请查阅控制台日志");
+        public static final Message recalc__index__start = field("&a开始执行商品索引重建操作，请稍等…");
+        public static final Message recalc__index__success = field("&a索引重建完成，为 %count% 个商品建立了搜索索引");
+        public static final Message recalc__index__failed = field("&e执行重建索引时出现一个错误，请查阅控制台日志");
+        public static final Message recalc__invalid_type = field("&e无效的操作类型");
+
+        public static final Message reload__assets = field("&a已开始重载资源，详细情况请见控制台");
+        public static final Message reload__database = field("&a已重载 database.yml 并重新连接数据库");
+        public static final Message reload__success = field("&a配置文件已重载");
+
+        public static final Message help__player = field(
+                "",
+                "&d&lSweetPlayerMarket 全球市场&r",
+                "&f/pm open",
+                "  &7-- &e打开全球市场首页",
+                "&f/pm me",
+                "  &7-- &e查看自己的已上架商品",
+                "&f/pm tags [玩家]",
+                "  &7-- &e打开选择分类菜单",
+                "&f/pm create <商店类型> <价格> <货币> [单份商品的物品数量] [总份数]",
+                "  &7-- &e上架商品到全球市场",
+                "&f/pm create <商店类型> --menu",
+                "  &7-- &e打开上架菜单",
+                ""
+        );
+        public static final Message help__admin = field(
+                "",
+                "&d&lSweetPlayerMarket 全球市场&r",
+                "&f/pm open [玩家]",
+                "  &7-- &e为自己或某人打开全球市场首页",
+                "&f/pm me [玩家]",
+                "  &7-- &e为自己或某人查看已上架商品",
+                "&f/pm tags [玩家]",
+                "  &7-- &e为自己或某人打开选择分类菜单",
+                "&f/pm create <商店类型> <价格> <货币> [单份商品的物品数量] [总份数]",
+                "  &7-- &e上架商品到全球市场",
+                "&f/pm create <商店类型> --menu",
+                "  &7-- &e打开上架菜单",
+                "&f/pm recalc",
+                "  &7-- &e重新计算所有商品的标签",
+                "&f/pm server [玩家]",
+                "  &7-- &e查看特殊账户“服务器”的已上架商品，通常是自动上架的商品",
+                "&f/pm auto-deploy <配置名> <操作>",
+                "  &7-- &e自动上架功能的测试命令",
+                "&f/pm reload database",
+                "  &7-- &e重新链接数据库",
+                "&f/pm reload",
+                "  &7-- &e重载插件配置文件",
+                ""
+        );
+    }
+
+    @Language(prefix="messages.tab-complete.")
+    public static class TabComplete {
+        public static final Message create__price = field("<价格>");
+        public static final Message create__item_count = field("[单份商品的物品数量]");
+        public static final Message create__amount = field("[总份数]");
+    }
+
+    @Language(prefix="messages.gui.")
+    public static class Gui {
+        public static final Message common__item_not_found = field("&e来晚了，该商品已下架");
+        public static final Message common__currency_not_found = field("&e在该子服不支持使用%currency%货币");
+        public static final Message common__yes = field("&a是");
+        public static final Message common__no = field("&c否");
+        public static final Message common__empty = field("&7空");
+        public static final Message common__none = field("&7无");
+
+        public static final Message keyword__prompt_message = field("&7[&e&l全球市场&7] &f请在聊天栏发送&e搜索关键词&f，如果要取消请发送&c %cancel%");
+        public static final Message keyword__prompt_cancel = field("cancel");
+
+        public static final Message deploy__price__prompt_message = field("&7[&e&l全球市场&7] &f请在聊天栏发送&e单份物品价格&f，如果要取消请发送&c %cancel%");
+        public static final Message deploy__price__prompt_cancel = field("cancel");
+        public static final Message deploy__price__success = field("&a已设置价格为 &e%money%%currency%");
+        public static final Message deploy__price__not_number = field("&e请输入一个正确的价格");
+        public static final Message deploy__amount__prompt_message = field("&7[&e&l全球市场&7] &f请在聊天栏发送&e总份数&f，如果要取消请发送&c %cancel%");
+        public static final Message deploy__amount__prompt_cancel = field("cancel");
+        public static final Message deploy__amount__success = field("&a已设置总份数为 &e%count%");
+        public static final Message deploy__amount__not_number = field("&e请输入一个正确的数量");
+        public static final Message deploy__item_count__prompt_message = field("&7[&e&l全球市场&7] &f请在聊天栏发送&e单份物品数量&f，如果要取消请发送&c %cancel%");
+        public static final Message deploy__item_count__prompt_cancel = field("cancel");
+        public static final Message deploy__item_count__success = field("&a已设置单份物品数量为 &e%count%");
+        public static final Message deploy__item_count__not_number = field("&e请输入一个正确的数量");
+
+        public static final Message sell__amount_zero = field("&e请先输入购买数量");
+        public static final Message sell__amount_not_enough = field("&e商品库存不足，减少一点购买数量吧~");
+        public static final Message sell__currency_not_enough = field("&e你没有足够的%currency%");
+        public static final Message sell__adapter_not_found = field("&e在该子服不支持操作该商品");
+        public static final Message sell__submit_failed = field("&e数据库更改提交失败，可能该商品已下架");
+        public static final Message sell__exception = field("&e出现错误，已打印日志到控制台，请联系服务器管理员");
+        public static final Message sell__success = field("&a你已成功购买&e <item>%item%</item>&r&e x%total_count%&a，花费&e %money% %currency%");
+
+        public static final Message buy__amount_zero = field("&e请先输入卖出数量");
+        public static final Message buy__amount_not_enough = field("&e商品库存空间不足，减少一点卖出数量吧~");
+        public static final Message buy__item_not_enough = field("&e你没有足够的物品来卖出");
+        public static final Message buy__adapter_not_found = field("&e在该子服不支持操作该商品");
+        public static final Message buy__submit_failed = field("&e数据库更改提交失败，可能该商品已下架");
+        public static final Message buy__exception = field("&e出现错误，已打印日志到控制台，请联系服务器管理员");
+        public static final Message buy__success = field("&a你已成功卖出&e <item>%item%</item>&r&e x%total_count%&a，获得&e %money% %currency%");
+
+        public static final Message me__claim__exception = field("&e出现错误，已打印日志到控制台，请联系服务器管理员");
+        public static final Message me__claim__plugin_too_old = field("&e这个子服的插件太老了，无法领取这个类型的商品");
+        public static final Message me__claim__buy__success = field("&a你已成功领取&e <item>%item%</item>&r&e x%total_count%");
+        public static final Message me__claim__sell__success = field("&a你已成功领取&e %money% %currency%");
+        public static final Message me__claim__submit_failed = field("&e数据库更改提交失败，请联系服务器管理员");
+
+        public static final Message me__take_down__exception = field("&e出现错误，已打印日志到控制台，请联系服务器管理员");
+        public static final Message me__take_down__item_not_found = field("&e该商品已下架，无需再进行下架操作");
+        public static final Message me__take_down__submit_failed = field("&e数据库更改提交失败，请联系服务器管理员");
+        public static final Message me__take_down__success = field("&a商品已下架，剩余商品或货币已归还到你的账户");
+        public static final Message me__take_down__success_admin = field("&a商品已下架，剩余商品或货币不会归还给你或店主");
+    }
+
+}

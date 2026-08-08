@@ -1,0 +1,59 @@
+# XMPlayerMarketPlus 拍卖模块配置
+# 完整集成 PlayerAuctions 能力：拍卖创建 / 竞拍 / 一口价 / 自动延期 / 取消上架 / 手续费结算 / 待领补偿
+
+auction:
+  enabled: true
+  # 拍卖默认货币（IEconomy id: Vault / PlayerPoints / MPoints:sign / CoinsEngine:id / Custom:id）
+  currency: Vault
+  # 单个玩家最大同时拍卖数（0 = 不限）
+  max-auctions-per-player: 5
+  # 默认/最小/最大拍卖时长（s/m/h/d/w）
+  default-duration: 24h
+  min-duration: 1h
+  max-duration: 168h
+  # 最低起拍价
+  min-start-price: 1.0
+  # 默认加价幅度与最小加价幅度
+  bid-increment: 1.0
+  min-bid-increment: 1.0
+  # true = 出价即扣款冻结（更安全）；false = 成交时才扣款（出价只校验余额）
+  bid-pay-immediately: true
+  # 到期拍卖扫描周期（秒）
+  expire-interval-seconds: 30
+
+  # 自动延期：最后 N 分钟内出价 → 截止时间顺延 N 分钟
+  auto-extend:
+    enabled: true
+    trigger-minutes: 5
+    extend-minutes: 5
+
+  # 成交手续费（从卖家所得中扣除）
+  tax:
+    enabled: true
+    percent: 5
+
+  # 上架费（创建拍卖时扣除，可配合经济 sink 回收）
+  listing-fee:
+    enabled: false
+    amount: 0
+
+  # 全服广播
+  broadcast:
+    on-create: true
+    on-sell: true
+    on-buy-now: true
+    # GLOBAL（全服）| WORLD（同世界）| NONE（关闭）
+    range: GLOBAL
+
+  # 待领补偿（等价 PlayerAuctions 邮箱）：离线/背包满时物品款项进入待领区
+  mailbox:
+    enabled: true
+    retention-days: 30
+
+  # 打开入口
+  entrances:
+    # 拍卖令牌右键（/spm auction token 获取）
+    auction-token: true
+    token-material: PAPER
+    # Citizens NPC 右键
+    npc: true

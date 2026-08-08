@@ -1,0 +1,156 @@
+
+# --------------------------------------
+#  注意，正式开始使用本插件之后请勿修改这个选项
+#  注意，正式开始使用本插件之后请勿修改这个选项
+#  注意，正式开始使用本插件之后请勿修改这个选项
+# --------------------------------------
+# 使用 玩家UUID 还是 玩家名 作为数据库玩家标识
+# true  -- 使用 UUID
+# false -- 使用玩家名
+# auto  -- 根据 server.properties 中的 online-mode 决定
+online-mode: auto
+
+# 指定 gui 配置所在路径，以 ./ 开头为相对于插件数据目录的相对路径，
+# 其余为相对于服务端目录的相对路径，或者绝对路径
+gui-folder: './gui'
+
+# 物品序列化器设置
+item-serializer:
+  # 是否在上架物品时测试是否可以正常序列化和反序列化物品
+  # 如果测试失败，将阻止玩家上架商品
+  check-on-create: true
+  # 优先使用插件内置的 item-nbt-api 来序列化物品
+  use-nbt-api: true
+
+# 是否在玩家上架物品后，刷新所有已打开全球市场界面的玩家界面
+update-gui-after-create-item: true
+
+# 当商品卖完、手动下架后，自动设置过期时间为当前时间，方便用户辨认
+update-outdate-time-when-sold-out: true
+
+# 玩家是否可以购买自己上架的商品
+can-buy-self-items: false
+
+# 通用时间格式
+datetime:
+  format: 'yyyy-MM-dd HH:mm:ss'
+  infinite: 无期限
+
+# 默认参数
+default:
+  # 上架默认使用货币
+  currency: Vault
+
+# 全球市场上架到期时间限制组
+# 拥有权限 sweet.playermarket.outdate.<组名> 则使用相应的时间，例如 sweet.playermarket.outdate.vip
+# 优先级 (priority) 数值越小的限制组越优先使用，在所有组都不匹配时，使用 default 组
+# 时间格式为 数值+单位，例如 5d 为 5天，可用单位有 M月、d天、h时、m分、s秒
+# 时间使用 infinite 代表永久有效
+outdate-time:
+  default:
+    priority: 1000
+    buy: 5d
+    sell: 5d
+  vip:
+    priority: 990
+    buy: 7d
+    sell: 7d
+  svip:
+    priority: 989
+    buy: 9d
+    sell: 9d
+  mvp:
+    priority: 988
+    buy: 10d
+    sell: 10d
+
+# 商品数据的显示名称
+display-names:
+  # 商店类型名称
+  market-types:
+    all: '&e所有'
+    buy: '&a收购'
+    sell: '&b出售'
+
+  # 金额显示缩写
+  money-format:
+    '10000': '万'
+    '100000000': '亿'
+
+  # 货币类型名称
+  currency-types:
+    all: '&a所有'
+    # Vault 货币
+    vault: '&e金币'
+    # PlayerPoints 货币
+    points: '&d点券'
+    # MPoints 货币
+    m-points:
+      sign: '&b点数'
+  columns:
+    create_time: '&a创建时间'
+    outdate_time: '&b到期时间'
+    price: '&6价格'
+    amount: '&3数量'
+  sort:
+    asc: '&a升序 &7(从&f小&7到&e大&7)'
+    desc: '&b降序 &7(从&e大&7到&f小&7)'
+
+# 在事件发生时执行的操作
+# 对于绑定了玩家上下文的事件，支持使用 PAPI 变量
+# 对于与商品相关的事件，支持使用以下变量
+# %creator%       - 卖家名字
+# %item%          - 物品展示名 (MiniMessage)
+# %shop_type%     - 商店类型 (使用上方配置显示名称)
+# %shop_type_raw% - 商店类型 (原始值)
+# %currency%      - 货币类型 (使用上方配置显示名称)
+# %currency_raw%  - 货币类型 (原始值)
+# %price%         - 商品价格 (已格式化)
+# %price_raw%     - 商品价格 (原始值)
+# %amount%        - 商品份数
+# %tag%           - 商品标签
+event-actions:
+  # 上架成功时执行的操作，以卖家作为玩家上下文
+  # 建议安装 SweetMessages，并将 [broadcast] 操作改为命令，以支持跨服公告
+  create-shop:
+    - type: broadcast
+      content: '&7[&e&l全球市场&r&7]&b 玩家 &e%creator% &b上架了 &e%shop_type%&r&e %item%&r&7 *%amount% &b到全球市场，价格为&e %price% %currency%&b，点击打开市场去看看吧！'
+      hover:
+        - '&e点击打开全球市场'
+      click:
+        action: RUN_COMMAND
+        value: '/playermarket open'
+  # 出售商店在有人购买时执行的操作，以购买者为玩家上下文
+  # 额外支持以下变量
+  # %buy_amount%       - 购买的总份数
+  # %total_item_count% - 购买的物品总数量
+  # %total_money%      - 总价格
+  sell-shop-confirm: []
+  # 收购商店在有人出售时执行的操作，以出售者为玩家上下文
+  # 额外支持以下变量
+  # %sell_amount%      - 出售的总份数
+  # %total_item_count% - 出售的物品总数量
+  # %total_money%      - 总价格
+  buy-shop-confirm: []
+
+notice:
+  on-join:
+    text: '&7[&e&l全球市场&r&7]&a 你有未领取的商品，点击此处前往领取'
+    hover:
+      - '&e点击打开个人商品菜单'
+    click: '/playermarket me --notice'
+  buy:
+    text: '&7[&e&l全球市场&r&7]&a 有人向你的商店卖出了&e %item%&r&a，点击此处前往领取物品'
+    hover:
+      - '&e点击打开个人商品菜单'
+    click: '/playermarket me --notice'
+  sell:
+    text: '&7[&e&l全球市场&r&7]&a 有人在你的商店购买了&e %item%&r&a，点击此处前往领取%currency%'
+    hover:
+      - '&e点击打开个人商品菜单'
+    click: '/playermarket me --notice'
+
+# 交易记录设置
+trade-logs:
+  # 是否启用交易记录，启用后，将会记录玩家的每一次下单操作
+  enable: true

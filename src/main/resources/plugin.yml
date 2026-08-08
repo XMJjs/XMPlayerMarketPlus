@@ -1,0 +1,32 @@
+name: SweetPlayerMarket
+version: '${version}'
+main: top.mrxiaom.sweet.playermarket.SweetPlayerMarket
+api-version: 1.13
+softdepend:
+  - Vault
+  - PlayerPoints
+  - MPoints
+  - PlaceholderAPI
+  - LangUtils
+  - ItemsAdder
+  - MythicLib
+  - MMOItems
+  - MythicMobs
+  - CraftEngine
+  - NeigeItems
+authors: [ MrXiaoM ]
+folia-supported: true
+# PluginBase Libraries ${libraries_config}
+commands:
+  sweetplayermarket:
+    description: 'The main command of SweetPlayerMarket'
+    aliases: [ spm, pm, playermarket ]
+
+# ✚ XMPlayerMarketPlus：拍卖功能权限
+permissions:
+  sweet.playermarket.auction:
+    description: 允许使用拍卖功能（浏览/出价/一口价/创建）
+    default: true
+  sweet.playermarket.auction.admin:
+    description: 拍卖管理（重载拍卖配置）
+    default: op

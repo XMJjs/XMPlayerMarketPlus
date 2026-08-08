@@ -1,0 +1,78 @@
+# 创建拍卖向导
+title: '<gradient:dark_green:green>创建拍卖</gradient>'
+inventory:
+  - '#########'
+  - '#       #'
+  - '#  拍   #'
+  - '#       #'
+  - '#价口时延#'
+  - '#确返   #'
+
+main-icons:
+  拍:
+    material: PAPER
+    display: '&e&l%item%'
+    lore:
+      - ''
+      - '&7显示当前手持物品'
+      - '&7重新拿起物品后点击刷新'
+      - ''
+      - '&f起拍价: &e%create_price%'
+      - '&f一口价: &b%create_buy_now%'
+      - '&f拍卖时长: &e%create_duration%'
+      - '&f自动延期: &a%create_auto_extend%'
+  空:
+    material: GRAY_STAINED_GLASS_PANE
+    display: '&8·'
+
+other-icons:
+  价:
+    material: EMERALD
+    display: '&a&l起拍价: %create_price%'
+    lore:
+      - ''
+      - '&a左键 &7| &f+10'
+      - '&b右键 &7| &f+1'
+      - '&eShift+左键 &7| &f输入自定义'
+      - ''
+      - '&7当前: &a%create_price%'
+  口:
+    material: GOLD_INGOT
+    display: '&b&l一口价: %create_buy_now%'
+    lore:
+      - ''
+      - '&a左键 &7| &f切换（无 ↔ 起拍价×2）'
+      - '&eShift+左键 &7| &f输入自定义'
+      - ''
+      - '&7当前: &b%create_buy_now%'
+  时:
+    material: CLOCK
+    display: '&e&l拍卖时长: %create_duration%'
+    lore:
+      - ''
+      - '&a左键 &7| &f切换时长'
+      - '&71h → 6h → 24h → 48h → 72h → 7天'
+      - ''
+      - '&7当前: &e%create_duration%'
+  延:
+    material: REPEATER
+    display: '&d&l自动延期: %create_auto_extend%'
+    lore:
+      - ''
+      - '&7到期前5分钟内出价自动顺延'
+      - ''
+      - '&a左键 &7| &f切换开关'
+  确:
+    material: GREEN_DYE
+    display: '&2&l✔ 确认创建'
+    lore:
+      - ''
+      - '&7扣除手持物品并上架拍卖'
+      - '&7（上架费与成交税见配置）'
+      - ''
+      - '&a左键 &7| &f确认创建拍卖'
+  返:
+    material: SPECTRAL_ARROW
+    display: '&f&l返回'
+    lore:
+      - '&7返回拍卖主菜单'

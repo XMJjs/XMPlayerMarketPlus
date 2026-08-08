@@ -1,0 +1,76 @@
+package top.mrxiaom.sweet.playermarket.actions;
+
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
+import top.mrxiaom.pluginbase.api.IAction;
+import top.mrxiaom.pluginbase.api.IActionProvider;
+import top.mrxiaom.pluginbase.func.GuiManager;
+import top.mrxiaom.pluginbase.gui.IGuiHolder;
+import top.mrxiaom.pluginbase.utils.Pair;
+import top.mrxiaom.sweet.playermarket.gui.api.AbstractGuiSearch;
+
+import java.util.List;
+
+public class ActionSearchCurrency implements IAction {
+    public static final IActionProvider PROVIDER = (input) -> {
+        if (input instanceof ConfigurationSection) {
+            ConfigurationSection section = (ConfigurationSection) input;
+            if ("search-currency".equals(section.getString("type"))) {
+                String currency = section.getString("currency");
+                if (currency != null) {
+                    return new ActionSearchCurrency(currency);
+                }
+            }
+        } else {
+            String s = String.valueOf(input);
+            if (s.startsWith("[search:currency]")) {
+                String type = s.substring(17);
+                return new ActionSearchCurrency(type);
+            }
+            if (s.startsWith("search:currency:")) {
+                String type = s.substring(16);
+                return new ActionSearchCurrency(type);
+            }
+        }
+        return null;
+    };
+    private final String type;
+    public ActionSearchCurrency(String type) {
+        this.type = type;
+    }
+
+    @Override
+    public void run(Player player, @Nullable List<Pair<String, Object>> replacements) {
+        if (player != null) {
+            IGuiHolder gui = GuiManager.inst().getOpeningGui(player);
+            if (gui instanceof AbstractGuiSearch.SearchGui) {
+                AbstractGuiSearch.SearchGui gm = (AbstractGuiSearch.SearchGui) gui;
+                switch (type) {
+                    case "next": {
+                        String currency = gm.searching().currency();
+                        if ("Vault".equals(currency)) {
+                            gm.searching().currency("PlayerPoints");
+                        } else if ("PlayerPoints".equals(currency)) {
+                            gm.searching().currency(null);
+                        } else {
+                            gm.searching().currency("Vault");
+                        }
+                        gm.refreshGui();
+                        break;
+                    }
+                    case "Vault":
+                    case "PlayerPoints": {
+                        gm.searching().currency(type);
+                        gm.refreshGui();
+                        break;
+                    }
+                }
+                if (type.startsWith("MPoints:")) {
+                    gm.searching().currency(type);
+                    gm.refreshGui();
+                }
+            }
+        }
+    }
+}

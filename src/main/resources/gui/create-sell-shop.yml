@@ -1,0 +1,144 @@
+title: '上架到 出售商店'
+inventory:
+  - '框框框框框框框框框'
+  - '框　物　数价币　框'
+  - '框　　　量格确　框'
+  - '返框框框框框框框框'
+main-icons:
+  物:
+    material: BARRIER
+    display: '&e&l选择物品'
+    lore:
+      - ''
+      - '  &f在下方物品栏'
+      - '  &a左键点击&f选择要出售的物品  '
+      - ''
+  确:
+    material: SLIME_BALL
+    display: '&e&l确认'
+    lore:
+      - ''
+      - '  &f物品: &e%item%  '
+      - '  &f单价: &e%price% %currency%  '
+      - '  &f卖出: &e%count% 件&7 (共 %total_count% 个物品)  '
+      - '  &f获得: &e%total_money% %currency%  '
+      - create costs
+      - limit messages
+      - ''
+      - '&a左键 &7| &f确认上架'
+    limit-messages:
+      header: ['']
+      line: '  %message%  '
+    create-costs:
+      header:
+        - '  &f手续费: %create_cost_status%'
+      line: ' &l &r&7▶ &e%money% %currency%'
+other-icons:
+  框:
+    material: WHITE_STAINED_GLASS_PANE
+    display: '&f'
+  返:
+    material: LIGHT_BLUE_STAINED_GLASS_PANE
+    display: '&e&l返回'
+    lore:
+      - ''
+      - '  &f回到全球市场首页  '
+      - ''
+    left-click-commands:
+      - '[player]playermarket open'
+  数:
+    material: CHEST
+    display: '&e总份数'
+    lore:
+      - ''
+      - '  &f总份数: &e%count%  '
+      - ''
+      - '&a左键&7 | &f总份数+1　　　 &7(Shift +5)'
+      - '&b右键&7 | &f总份数-1　　　 &7(Shift -5)'
+      - '&eQ键&7 | &f手动设置总份数'
+    left-click-commands:
+      - '[count:amount]+1'
+    shift-left-click-commands:
+      - '[count:amount]+5'
+    right-click-commands:
+      - '[count:amount]-1'
+    shift-right-click-commands:
+      - '[count:amount]-5'
+    drop-commands:
+      - '[count:amount]input'
+  量:
+    material: OAK_PLANKS
+    display: '&e单份数量'
+    lore:
+      - ''
+      - '  &f单份物品数量: &e%item_count%  '
+      - ''
+      - '&a左键&7 | &f单份物品数量+1 &7(Shift +5)'
+      - '&b右键&7 | &f单份物品数量-1 &7(Shift -5)'
+      - '&eQ键&7 | &f手动设置单份物品数量'
+    left-click-commands:
+      - '[count:item]+1'
+    shift-left-click-commands:
+      - '[count:item]+5'
+    right-click-commands:
+      - '[count:item]-1'
+    shift-right-click-commands:
+      - '[count:item]-5'
+    drop-commands:
+      - '[count:item]input'
+  价:
+    material: GLOWSTONE_DUST
+    display: '&a增加价格'
+    lore:
+      - ''
+      - '  &f单价: &e%price% %currency%  '
+      - ''
+      - '&a左键&7 | &f单价+1 &7(Shift +10)'
+      - '&b右键&7 | &f单价+5 &7(Shift +100)'
+      - '&eQ键&7 | &f手动设置价格'
+    left-click-commands:
+      - '[price]+1'
+    shift-left-click-commands:
+      - '[price]+10'
+    right-click-commands:
+      - '[price]+5'
+    shift-right-click-commands:
+      - '[price]+100'
+    drop-commands:
+      - '[price]input'
+  格:
+    material: REDSTONE
+    display: '&c减少价格'
+    lore:
+      - ''
+      - '  &f单价: &e%price% %currency%  '
+      - ''
+      - '&a左键&7 | &f单价-1 &7(Shift -10)'
+      - '&b右键&7 | &f单价-5 &7(Shift -100)'
+      - '&eQ键&7 | &f手动设置价格'
+    left-click-commands:
+      - '[price]-1'
+    shift-left-click-commands:
+      - '[price]-10'
+    right-click-commands:
+      - '[price]-5'
+    shift-right-click-commands:
+      - '[price]-100'
+    drop-commands:
+      - '[price]input'
+  币:
+    material: GOLD_INGOT
+    display: '&e设置货币'
+    lore:
+      - ''
+      - '  &f货币: &e%currency%  '
+      - ''
+      - '&a左键 &7| &f切换货币类型'
+      - '&eShift+左键 &7| &f指定使用金币出售'
+      - '&dShift+右键 &7| &f指定使用点券出售'
+    left-click-commands:
+      - '[currency]switch::Vault,PlayerPoints'
+    shift-left-click-commands:
+      - '[currency]set::Vault'
+    shift-right-click-commands:
+      - '[currency]set::PlayerPoints'

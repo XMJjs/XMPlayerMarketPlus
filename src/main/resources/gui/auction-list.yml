@@ -1,0 +1,93 @@
+# 拍卖浏览列表（分页 + 排序）
+title: '<gradient:gold:yellow>拍卖行 - 第 %page%/%max_page% 页</gradient>'
+inventory:
+  - '#########'
+  - '#拍拍拍拍拍拍拍#'
+  - '#拍拍拍拍拍拍拍#'
+  - '#拍拍拍拍拍拍拍#'
+  - '#拍拍拍拍拍拍拍#'
+  - '#刷排序返我记创#'
+
+main-icons:
+  拍:
+    display: '&e&l%item%'
+    lore:
+      - item lore
+      - ''
+      - '  &f卖家: &e%auction_seller%'
+      - '  &f起拍价: &6%auction_start_price%'
+      - '  &f当前出价: &a%auction_current_bid%'
+      - '  &f一口价: &b%auction_buy_now%'
+      - '  &f出价次数: &e%auction_bid_count% &7| &f最高出价者: &e%auction_highest_bidder%'
+      - '  &f剩余时间: &e%auction_time_left%'
+      - '  &f自动延期: &a%auction_auto_extend%'
+      - ''
+      - '&a左键 &7| &f查看详情并出价'
+  空:
+    material: GRAY_STAINED_GLASS_PANE
+    display: '&8暂无拍卖'
+    lore:
+      - '&7当前页没有拍卖'
+      - '&7点击刷新试试'
+
+other-icons:
+  刷:
+    material: SNOWBALL
+    display: '&a&l刷新'
+    lore:
+      - ''
+      - '&7刷新当前列表'
+      - ''
+      - '&a左键 &7| &f刷新'
+    left-click-commands:
+      - '[refresh]'
+  排:
+    material: COMPARATOR
+    display: '&e&l排序'
+    lore:
+      - ''
+      - '&7切换排序方式'
+      - '&7时间 → 价格升 → 价格降 → 最新'
+      - ''
+      - '&a左键 &7| &f切换'
+    left-click-commands:
+      - '[auction-sort]'
+  序:
+    material: ARROW
+    display: '&f&l翻页'
+    lore:
+      - ''
+      - '&a左键 &7| &f下一页'
+      - '&b右键 &7| &f上一页'
+    left-click-commands:
+      - '[auction-page]+1'
+    right-click-commands:
+      - '[auction-page]-1'
+  返:
+    material: SPECTRAL_ARROW
+    display: '&f&l返回'
+    lore:
+      - '&7返回拍卖主菜单'
+    left-click-commands:
+      - '[auction-open:main]'
+  我:
+    material: BOOK
+    display: '&d&l我的拍卖'
+    lore:
+      - '&7管理你的拍卖'
+    left-click-commands:
+      - '[auction-open:my]'
+  记:
+    material: WRITABLE_BOOK
+    display: '&6&l竞拍记录'
+    lore:
+      - '&7查看你的竞拍记录'
+    left-click-commands:
+      - '[auction-open:bids]'
+  创:
+    material: ANVIL
+    display: '&2&l创建拍卖'
+    lore:
+      - '&7创建新的拍卖'
+    left-click-commands:
+      - '[auction-open:create]'

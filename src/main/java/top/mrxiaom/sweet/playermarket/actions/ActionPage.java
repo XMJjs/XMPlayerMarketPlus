@@ -1,0 +1,59 @@
+package top.mrxiaom.sweet.playermarket.actions;
+
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
+import top.mrxiaom.pluginbase.api.IAction;
+import top.mrxiaom.pluginbase.api.IActionProvider;
+import top.mrxiaom.pluginbase.func.GuiManager;
+import top.mrxiaom.pluginbase.gui.IGuiHolder;
+import top.mrxiaom.pluginbase.utils.Pair;
+import top.mrxiaom.pluginbase.utils.Util;
+import top.mrxiaom.sweet.playermarket.gui.api.IGuiPageable;
+
+import java.util.List;
+
+public class ActionPage implements IAction {
+    public static final IActionProvider PROVIDER = (input) -> {
+        if (input instanceof ConfigurationSection) {
+            ConfigurationSection section = (ConfigurationSection) input;
+            if ("page".equals(section.getString("type"))) {
+                int pages = section.getInt("pages");
+                if (pages != 0) {
+                    return new ActionPage(pages);
+                }
+            }
+        } else {
+            String s = String.valueOf(input);
+            if (s.startsWith("[page]")) {
+                int pages = Util.parseInt(s.substring(6)).orElse(0);
+                if (pages != 0) {
+                    return new ActionPage(pages);
+                }
+            }
+            if (s.startsWith("page:")) {
+                int pages = Util.parseInt(s.substring(5)).orElse(0);
+                if (pages != 0) {
+                    return new ActionPage(pages);
+                }
+            }
+        }
+        return null;
+    };
+    private final int pages;
+    public ActionPage(int pages) {
+        this.pages = pages;
+    }
+
+    @Override
+    public void run(Player player, @Nullable List<Pair<String, Object>> replacements) {
+        if (player != null) {
+            IGuiHolder gui = GuiManager.inst().getOpeningGui(player);
+            if (gui instanceof IGuiPageable) {
+                IGuiPageable p = (IGuiPageable) gui;
+                if (pages > 0) p.turnPageDown(pages);
+                if (pages < 0) p.turnPageUp(-pages);
+            }
+        }
+    }
+}

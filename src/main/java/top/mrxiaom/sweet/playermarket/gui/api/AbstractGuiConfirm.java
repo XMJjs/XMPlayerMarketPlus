@@ -1,0 +1,331 @@
+package top.mrxiaom.sweet.playermarket.gui.api;
+
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.MemoryConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
+import top.mrxiaom.pluginbase.api.InventoryViewAccessor;
+import top.mrxiaom.pluginbase.func.gui.IModifier;
+import top.mrxiaom.pluginbase.func.gui.LoadedIcon;
+import top.mrxiaom.pluginbase.gui.IGuiHolder;
+import top.mrxiaom.pluginbase.utils.AdventureItemStack;
+import top.mrxiaom.pluginbase.utils.ListPair;
+import top.mrxiaom.pluginbase.utils.Pair;
+import top.mrxiaom.pluginbase.utils.Util;
+import top.mrxiaom.pluginbase.utils.depend.PAPI;
+import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
+import top.mrxiaom.sweet.playermarket.data.MarketItem;
+import top.mrxiaom.sweet.playermarket.func.AbstractGuiModule;
+import top.mrxiaom.sweet.playermarket.func.ShopAdapterRegistry;
+import top.mrxiaom.sweet.playermarket.utils.Utils;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
+
+import static top.mrxiaom.sweet.playermarket.gui.api.AbstractGuiSearch.applyMarketItemPlaceholders;
+
+public abstract class AbstractGuiConfirm extends AbstractGuiModule {
+    protected final String filePath;
+    public AbstractGuiConfirm(SweetPlayerMarket plugin, String file) {
+        super(plugin, plugin.resolve("./gui/" + file));
+        this.filePath = file;
+    }
+
+    @Override
+    public String warningPrefix() {
+        return "[" + filePath + "]";
+    }
+
+    @Override
+    public void reloadConfig(MemoryConfiguration cfg) {
+        String resourceFile = "gui/" + filePath;
+        File guiFolder = plugin.resolve(cfg.getString("gui-folder", "./gui"));
+        this.file = new File(guiFolder, filePath);
+        if (!file.exists()) {
+            plugin.saveResource(resourceFile, file);
+        }
+        super.reloadConfig(cfg);
+        iconItem = Utils.requireIconNotNull(this, resourceFile, iconItem, "main-icons.物");
+        iconConfirm = Utils.requireIconNotNull(this, resourceFile, iconConfirm, "main-icons.确");
+        iconBack = Utils.requireIconNotNull(this, resourceFile, iconBack, "main-icons.返");
+    }
+
+    @Override
+    protected void reloadMenuConfig(YamlConfiguration config) {
+        iconItem = null;
+        iconConfirm = null;
+        iconBack = null;
+    }
+
+    LoadedIcon iconItem, iconConfirm, iconBack;
+    @Override
+    protected void loadMainIcon(ConfigurationSection section, String id, LoadedIcon icon) {
+        if (id.equals("物")) {
+            iconItem = icon;
+        }
+        if (id.equals("确")) {
+            iconConfirm = icon;
+        }
+        if (id.equals("返")) {
+            iconBack = icon;
+        }
+    }
+
+    @Override
+    protected ItemStack applyMainIcon(IGuiHolder instance, Player player, char id, int index, int appearTimes) {
+        ConfirmGui gui = (ConfirmGui) instance;
+        if (id == '物') {
+            MarketItem item = gui.marketItem;
+
+            ShopAdapterRegistry.Entry entry = ShopAdapterRegistry.inst().getByMarketItem(item);
+
+            ItemStack baseItem = item.item();
+            int displayAmount = baseItem.getAmount();
+            List<String> itemLore = AdventureItemStack.getItemLoreAsMiniMessage(baseItem);
+
+            IModifier<String> displayModifier = oldName -> Pair.replace(PAPI.setPlaceholders(player, oldName), gui.commonReplacements);
+            IModifier<List<String>> loreModifier = oldLore -> {
+                List<String> lore = new ArrayList<>();
+                for (String s : oldLore) {
+                    if (s.equals("item lore")) {
+                        lore.addAll(itemLore);
+                        continue;
+                    }
+                    String result = Utils.replaceOrNull(player, s, gui.commonReplacements);
+                    if (result != null) {
+                        if (!result.isEmpty()) {
+                            lore.add(result);
+                        }
+                        continue;
+                    }
+                    lore.add(Pair.replace(PAPI.setPlaceholders(player, s), gui.commonReplacements));
+                }
+                return lore;
+            };
+            ItemStack icon = iconItem.generateIcon(baseItem, null, displayModifier, loreModifier);
+            icon.setAmount(displayAmount);
+            return entry.postProcessIcon(item, player, gui.commonReplacements, icon);
+        }
+        IModifier<String> displayModifier = oldName -> Pair.replace(oldName, gui.commonReplacements);
+        IModifier<List<String>> loreModifier = oldLore -> Pair.replace(oldLore, gui.commonReplacements);
+        if (id == '确') {
+            return iconConfirm.generateIcon(player, displayModifier, loreModifier);
+        }
+        if (id == '返') {
+            return iconBack.generateIcon(player, displayModifier, loreModifier);
+        }
+        return null;
+    }
+
+    @Override
+    protected @Nullable ItemStack applyOtherIcon(IGuiHolder instance, Player player, char id, int index, int appearTimes, LoadedIcon icon) {
+        ConfirmGui gui = (ConfirmGui) instance;
+        IModifier<String> displayModifier = oldName -> Pair.replace(oldName, gui.commonReplacements);
+        IModifier<List<String>> loreModifier = oldLore -> Pair.replace(oldLore, gui.commonReplacements);
+        return icon.generateIcon(player, displayModifier, loreModifier);
+    }
+
+    public abstract class ConfirmGui extends Gui implements IGuiConfirm, IGuiRefreshable {
+        protected final MarketItem marketItem;
+        protected final ListPair<String, Object> commonReplacements = new ListPair<>(), baseReplacements = new ListPair<>();
+        protected int count = 1;
+        protected boolean actionLock = false;
+
+        protected ConfirmGui(Player player, MarketItem marketItem) {
+            super(player, guiTitle, guiInventory);
+            this.marketItem = marketItem;
+
+            updateBaseReplacements();
+        }
+
+        protected void updateBaseReplacements() {
+            ListPair<String, Object> r = baseReplacements;
+            ItemStack baseItem = marketItem.item();
+            String itemName = plugin.displayNames().getDisplayName(baseItem, player);
+
+            r.add("%display%", itemName);
+            applyMarketItemPlaceholders(plugin, marketItem, r);
+            ShopAdapterRegistry.Entry entry = ShopAdapterRegistry.inst().getByMarketItem(marketItem);
+            entry.updateReplacements(marketItem, player, r);
+        }
+
+        public void setActionLock(boolean actionLock) {
+            this.actionLock = actionLock;
+        }
+
+        public int count() {
+            return count;
+        }
+
+        public void count(int count) {
+            this.count = count;
+        }
+
+        public abstract int getMaxCount();
+
+        @Override
+        public void countAdd(int count) {
+            int target = count() + count;
+            if (target > getMaxCount()) {
+                countAddMax();
+                return;
+            }
+            count(target);
+            refreshGui();
+        }
+
+        @Override
+        public void countAddMax() {
+            if (count() == getMaxCount()) return;
+            count(getMaxCount());
+            refreshGui();
+        }
+
+        @Override
+        public void countMinus(int count) {
+            int target = count() - count;
+            if (target < 1 || getMaxCount() == 0) {
+                countMinusMax();
+                return;
+            }
+            count(target);
+            refreshGui();
+        }
+
+        @Override
+        public void countMinusMax() {
+            if (getMaxCount() == 0) {
+                if (count() == 0) return;
+                count(0);
+                refreshGui();
+            } else {
+                if (count() == 1) return;
+                count(1);
+                refreshGui();
+            }
+        }
+
+        @Override
+        public void countSet(int count) {
+            if (count() == count) return;
+            if (count < 1) {
+                countMinusMax();
+                return;
+            }
+            if (count > getMaxCount()) {
+                countAddMax();
+                return;
+            }
+            count(count);
+            refreshGui();
+        }
+
+        @Override
+        public void refreshGui() {
+            updateInventory(getInventory());
+            Util.submitInvUpdate(player);
+        }
+
+        @Override
+        public void updateInventory(BiConsumer<Integer, ItemStack> setItem) {
+            updateReplacements();
+            super.updateInventory(setItem);
+            actionLock = false;
+        }
+
+        protected void updateReplacements() {
+            ListPair<String, Object> r = commonReplacements;
+            r.clear();
+            r.addAll(baseReplacements);
+            r.add("%count%", count);
+            r.add("%total_count%", count * marketItem.item().getAmount());
+            r.add("%total_money%", String.format("%.2f", count * marketItem.price()).replace(".00", ""));
+        }
+
+        @Override
+        public void onClick(
+                InventoryAction action, ClickType click,
+                InventoryType.SlotType slotType, int slot,
+                ItemStack currentItem, ItemStack cursor,
+                InventoryViewAccessor view, InventoryClickEvent event
+        ) {
+            event.setCancelled(true);
+            if (actionLock) return;
+            Character clickedId = getClickedId(slot);
+            if (clickedId == null) return;
+            actionLock = true;
+            if (clickedId == '物') {
+                onClickMarketItem(action, click, slotType, slot, view, event);
+                return;
+            }
+            if (clickedId == '确') {
+                onClickConfirm(action, click, slotType, slot, view, event);
+                return;
+            }
+            if (clickedId == '返') {
+                onClickBack(action, click, slotType, slot, view, event);
+                return;
+            }
+            if (onClickMainIcons(action, click, slotType, slot, clickedId, view, event)) {
+                return;
+            }
+            handleOtherClick(click, clickedId);
+        }
+
+        protected void onClickMarketItem(
+                InventoryAction action, ClickType click,
+                InventoryType.SlotType slotType, int slot,
+                InventoryViewAccessor view, InventoryClickEvent event) {
+            actionLock = true;
+            plugin.getScheduler().runTask(() -> {
+                ListPair<String, Object> r = new ListPair<>();
+                r.add("__internal__market_item", marketItem);
+                iconItem.click(player, click, r);
+                actionLock = false;
+            });
+        }
+
+        protected abstract void onClickConfirm(
+                InventoryAction action, ClickType click,
+                InventoryType.SlotType slotType, int slot,
+                InventoryViewAccessor view, InventoryClickEvent event);
+
+        protected abstract void onClickBack(
+                InventoryAction action, ClickType click,
+                InventoryType.SlotType slotType, int slot,
+                InventoryViewAccessor view, InventoryClickEvent event);
+
+        protected boolean onClickMainIcons(
+                InventoryAction action, ClickType click,
+                InventoryType.SlotType slotType, int slot,
+                Character clickedId,
+                InventoryViewAccessor view, InventoryClickEvent event
+        ) {
+            return false;
+        }
+
+        @Override
+        public void handleOtherClick(ClickType type, Character id) {
+            if (id != null) {
+                LoadedIcon icon = otherIcons.get(id);
+                if (icon != null) {
+                    plugin.getScheduler().runTask(() -> {
+                        icon.click(player, type);
+                        actionLock = false;
+                    });
+                    return;
+                }
+            }
+            actionLock = false;
+        }
+    }
+
+}

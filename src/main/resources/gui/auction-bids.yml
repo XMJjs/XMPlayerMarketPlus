@@ -1,0 +1,77 @@
+# 竞拍记录（买家视角）
+title: '<gradient:gold:yellow>竞拍记录 - 第 %page%/%max_page% 页</gradient>'
+inventory:
+  - '#########'
+  - '#拍拍拍拍拍拍拍#'
+  - '#拍拍拍拍拍拍拍#'
+  - '#拍拍拍拍拍拍拍#'
+  - '#拍拍拍拍拍拍拍#'
+  - '#刷序返主我创#'
+
+main-icons:
+  拍:
+    display: '&e&l%item%'
+    lore:
+      - item lore
+      - ''
+      - '  &f卖家: &e%auction_seller%'
+      - '  &f当前出价: &a%auction_current_bid%'
+      - '  &f我的角色: &e买家'
+      - '  &f状态: &e%auction_status%'
+      - '  &f剩余时间: &e%auction_time_left%'
+      - ''
+      - '&a左键 &7| &f查看详情'
+      - '&b右键 &7| &f领取拍得物品（成交后）'
+  空:
+    material: GRAY_STAINED_GLASS_PANE
+    display: '&8暂无记录'
+    lore:
+      - '&7你还没有参与过拍卖'
+      - '&7去浏览拍卖看看吧'
+
+other-icons:
+  刷:
+    material: SNOWBALL
+    display: '&a&l刷新'
+    lore:
+      - '&7刷新当前列表'
+    left-click-commands:
+      - '[refresh]'
+  序:
+    material: ARROW
+    display: '&f&l翻页'
+    lore:
+      - '&a左键 &7| &f下一页'
+      - '&b右键 &7| &f上一页'
+    left-click-commands:
+      - '[auction-page]+1'
+    right-click-commands:
+      - '[auction-page]-1'
+  返:
+    material: SPECTRAL_ARROW
+    display: '&f&l返回'
+    lore:
+      - '&7返回拍卖主菜单'
+    left-click-commands:
+      - '[auction-open:main]'
+  主:
+    material: GOLD_BLOCK
+    display: '&6&l拍卖主菜单'
+    lore:
+      - '&7返回拍卖主菜单'
+    left-click-commands:
+      - '[auction-open:main]'
+  我:
+    material: BOOK
+    display: '&d&l我的拍卖'
+    lore:
+      - '&7管理你的拍卖'
+    left-click-commands:
+      - '[auction-open:my]'
+  创:
+    material: ANVIL
+    display: '&2&l创建拍卖'
+    lore:
+      - '&7创建新的拍卖'
+    left-click-commands:
+      - '[auction-open:create]'

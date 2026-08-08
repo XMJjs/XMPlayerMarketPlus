@@ -1,0 +1,65 @@
+# 拍卖详情
+title: '<gradient:gold:yellow>拍卖详情</gradient>'
+inventory:
+  - '#########'
+  - '#       #'
+  - '#  拍   #'
+  - '#       #'
+  - '#       #'
+  - '#出口取返#'
+
+main-icons:
+  拍:
+    display: '&e&l%item%'
+    lore:
+      - item lore
+      - ''
+      - '  &f卖家: &e%auction_seller%'
+      - '  &f起拍价: &6%auction_start_price%'
+      - '  &f当前出价: &a%auction_current_bid%'
+      - '  &f一口价: &b%auction_buy_now%'
+      - '  &f最低加价: &e%auction_next_bid%'
+      - '  &f最高出价者: &e%auction_highest_bidder%'
+      - '  &f剩余时间: &e%auction_time_left%'
+      - '  &f截止时间: &e%auction_end_time%'
+      - '  &f自动延期: &a%auction_auto_extend%'
+      - '  &f状态: &e%auction_status%'
+      - ''
+      - '&a左键出价 &7| &b右键一口价 &7| &cShift+左键自定义出价'
+  空:
+    material: GRAY_STAINED_GLASS_PANE
+    display: '&8·'
+
+other-icons:
+  出:
+    material: EMERALD
+    display: '&a&l出价'
+    lore:
+      - ''
+      - '&7左键: 按最低加价出价'
+      - '&7Shift+左键: 输入自定义出价'
+      - ''
+      - '&a当前最低可出: &e%auction_next_bid%'
+  口:
+    material: GOLD_INGOT
+    display: '&b&l一口价'
+    lore:
+      - ''
+      - '&7立即以一口价拍下'
+      - '&7一口价: &b%auction_buy_now%'
+      - ''
+      - '&b左键 &7| &f一口价购买'
+  取:
+    material: BARRIER
+    display: '&c&l取消拍卖'
+    lore:
+      - ''
+      - '&7取消后物品退还背包'
+      - '&7最高出价者押金自动退还'
+      - ''
+      - '&c仅卖家本人可操作'
+  返:
+    material: SPECTRAL_ARROW
+    display: '&f&l返回'
+    lore:
+      - '&7返回上一界面'
