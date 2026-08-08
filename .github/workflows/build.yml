@@ -21,6 +21,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Windows 提交的仓库在 Linux runner 上会丢失 gradlew 执行位，必须显式授权
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 

@@ -1,2 +1,9 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# 强制脚本使用 LF 换行，防止 Windows CRLF 破坏 gradlew / shell 脚本
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.java text eol=lf
+*.kts text eol=lf
+*.md text eol=lf

@@ -30,7 +30,14 @@
 ### 环境要求
 
 - **Java 8+**（服务端运行）；**JDK 25**（编译，见构建）
-- **Paper / Spigot 1.13+**（`api-version: 1.13`，兼容现代版本；Folia/Canvas 亦支持）
+- **服务端版本支持矩阵**（目标：26.x 与 1.21.x 以上）：
+  | 服务端 | 支持 | 说明 |
+  |---|---|---|
+  | Paper / Spigot 1.20.x | ✅ | 基准编译版本（spigot-api 1.20） |
+  | Paper / Spigot **1.21.x 及以上** | ✅ | 完全支持 |
+  | Paper **26.x** | ✅ | 代码零 NMS 引用、纯 Bukkit API，向后兼容加载 |
+  | Folia / Canvas | ✅ | `folia-supported: true` + 调度器兼容层 |
+  - `api-version: 1.13` 声明触发服务端兼容模式，向下/向上均安全
 - **经济插件**（至少其一）：Vault（推荐）/ PlayerPoints / MPoints / CoinsEngine / 自定义货币
 
 ### 安装

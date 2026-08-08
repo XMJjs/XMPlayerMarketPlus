@@ -36,6 +36,10 @@ repositories {
 }
 
 dependencies {
+    // 版本兼容策略：用 spigot-api 1.20 编译 + plugin.yml 声明 api-version 1.13。
+    // 项目代码零 NMS 引用、仅使用 Bukkit 标准 API，因此产物可向后兼容运行于
+    // 1.20.x / 1.21.x / 26.x（及 Folia/Canvas）。若将来需要调用更高版本专属 API，
+    // 再按需升级此依赖（如 paper-api 26.x），但会相应抬高最低服务端版本。
     compileOnly("org.spigotmc:spigot-api:1.20-R0.1-SNAPSHOT")
     // compileOnly("org.spigotmc:spigot:1.20") // NMS
 
