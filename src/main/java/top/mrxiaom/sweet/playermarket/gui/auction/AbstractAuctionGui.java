@@ -175,8 +175,8 @@ public abstract class AbstractAuctionGui extends AbstractGuiModule {
     }
 
     /** 拍卖 GUI 实例：分页 + 刷新 + 点击分发 */
-    public abstract class AuctionGui extends Gui implements top.mrxiaom.pluginbase.gui.IGuiRefreshable,
-            top.mrxiaom.pluginbase.gui.IGuiPageable {
+    public abstract class AuctionGui extends Gui implements top.mrxiaom.sweet.playermarket.gui.api.IGuiRefreshable,
+            top.mrxiaom.sweet.playermarket.gui.api.IGuiPageable {
         public final SweetPlayerMarket plugin = AbstractAuctionGui.this.plugin;
         protected final ListX<Auction> auctions = new ListX<>();
         protected final int slotsSize;

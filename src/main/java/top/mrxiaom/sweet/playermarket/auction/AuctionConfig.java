@@ -4,6 +4,7 @@ import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.jetbrains.annotations.NotNull;
 import top.mrxiaom.pluginbase.utils.ConfigUtils;
+import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
 import top.mrxiaom.sweet.playermarket.func.AbstractModule;
 
 import java.io.File;

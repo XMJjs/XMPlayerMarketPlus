@@ -2,6 +2,7 @@ package top.mrxiaom.sweet.playermarket.auction;
 
 import org.bukkit.configuration.MemoryConfiguration;
 import top.mrxiaom.pluginbase.func.AutoRegister;
+import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
 import top.mrxiaom.sweet.playermarket.func.AbstractModule;
 
 /**

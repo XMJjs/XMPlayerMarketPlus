@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import top.mrxiaom.pluginbase.utils.Pair;
 import top.mrxiaom.sweet.playermarket.Messages;
 import top.mrxiaom.sweet.playermarket.SweetPlayerMarket;
+import top.mrxiaom.pluginbase.utils.arguments.CommandArguments;
 import top.mrxiaom.sweet.playermarket.api.AbstractArguments;
 import top.mrxiaom.sweet.playermarket.auction.AuctionConfig;
 import top.mrxiaom.sweet.playermarket.auction.AuctionMessages;

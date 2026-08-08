@@ -7,7 +7,7 @@ import top.mrxiaom.pluginbase.api.IAction;
 import top.mrxiaom.pluginbase.api.IActionProvider;
 import top.mrxiaom.pluginbase.func.GuiManager;
 import top.mrxiaom.pluginbase.gui.IGuiHolder;
-import top.mrxiaom.pluginbase.gui.IGuiPageable;
+import top.mrxiaom.sweet.playermarket.gui.api.IGuiPageable;
 
 import java.util.List;
 

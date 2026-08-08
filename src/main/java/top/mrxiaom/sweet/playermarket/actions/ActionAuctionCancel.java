@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import top.mrxiaom.pluginbase.api.IActionProvider;
 import top.mrxiaom.pluginbase.func.GuiManager;
 import top.mrxiaom.pluginbase.gui.IGuiHolder;
-import top.mrxiaom.pluginbase.gui.IGuiRefreshable;
+import top.mrxiaom.sweet.playermarket.gui.api.IGuiRefreshable;
 import top.mrxiaom.sweet.playermarket.auction.Auction;
 import top.mrxiaom.sweet.playermarket.auction.AuctionService;
 

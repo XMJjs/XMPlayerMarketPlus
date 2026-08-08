@@ -128,9 +128,9 @@ public class GuiAuctionDetail extends AbstractAuctionGui {
                     case '返': { // 返回
                         if (parent != null) {
                             parent.open();
-                            if (parent instanceof top.mrxiaom.pluginbase.gui.IGuiRefreshable) {
+                            if (parent instanceof top.mrxiaom.sweet.playermarket.gui.api.IGuiRefreshable) {
                                 // 返回后刷新列表数据（出价/取消后保持最新）
-                                ((top.mrxiaom.pluginbase.gui.IGuiRefreshable) parent).refreshGui();
+                                ((top.mrxiaom.sweet.playermarket.gui.api.IGuiRefreshable) parent).refreshGui();
                             }
                         } else {
                             GuiAuctionMain.open(player);
