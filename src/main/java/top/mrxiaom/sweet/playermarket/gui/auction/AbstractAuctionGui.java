@@ -264,6 +264,17 @@ public abstract class AbstractAuctionGui extends AbstractGuiModule {
         @Override
         protected Inventory create(int size, String title) {
             int maxPage = Math.max(1, (int) Math.ceil((double) totalCount / slotsSize));
+            // 防御：布局可能来自数据目录的外部自定义文件（plugins/SweetPlayerMarket/gui/），
+            // 若为旧版本或被人为改坏（尺寸不是 9 的倍数），Bukkit 会抛
+            // "Size for custom inventory must be a multiple of 9" 导致 GUI 打不开。
+            // 这里向上规整到 9 的倍数，多余槽位为空槽，保证界面总能打开。
+            if (size < 9 || size > 54 || size % 9 != 0) {
+                int fixed = Math.min(54, Math.max(9, ((size + 8) / 9) * 9));
+                plugin.warn("[" + filePath + "] 布局尺寸 " + size + " 非法，已自动规整为 " + fixed
+                        + "；若界面显示异常请删除 plugins/SweetPlayerMarket/gui/" + filePath
+                        + " 后重启服务器以恢复默认布局");
+                size = fixed;
+            }
             return super.create(size, Pair.replace0(title,
                     Pair.of("%page%", page),
                     Pair.of("%max_page%", maxPage)));
