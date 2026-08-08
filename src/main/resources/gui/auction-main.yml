@@ -3,10 +3,10 @@ title: '<gradient:gold:yellow><bold>⚒ 拍卖行</bold></gradient>'
 inventory:
   - '#########'
   - '#       #'
-  - '#  拍   #'
+  - '#  拍   # '
   - '#       #'
   - '#       #'
-  - '#览我记创#'
+  - '#览我记创#   '
 
 main-icons:
   拍:

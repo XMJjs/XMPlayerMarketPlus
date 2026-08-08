@@ -3,10 +3,10 @@ title: '<gradient:dark_green:green>创建拍卖</gradient>'
 inventory:
   - '#########'
   - '#       #'
-  - '#  拍   #'
+  - '#  拍   # '
   - '#       #'
-  - '#价口时延#'
-  - '#确返   #'
+  - '#价口时延#   '
+  - '#确返   #  '
 
 main-icons:
   拍:

@@ -3,10 +3,10 @@ title: '<gradient:gold:yellow>拍卖详情</gradient>'
 inventory:
   - '#########'
   - '#       #'
-  - '#  拍   #'
+  - '#  拍   # '
   - '#       #'
   - '#       #'
-  - '#出口取返#'
+  - '#出口取返#   '
 
 main-icons:
   拍:
