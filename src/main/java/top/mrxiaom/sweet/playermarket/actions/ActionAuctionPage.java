@@ -43,6 +43,7 @@ public class ActionAuctionPage implements IAction {
 
     @Override
     public void run(@NotNull Player player, List<top.mrxiaom.pluginbase.utils.Pair<String, Object>> replacements) {
+        try {
         IGuiHolder gui = GuiManager.inst().getOpeningGui(player);
         if (gui instanceof IGuiPageable) {
             IGuiPageable pageable = (IGuiPageable) gui;
@@ -52,5 +53,10 @@ public class ActionAuctionPage implements IAction {
                 pageable.turnPageUp(-pages);
             }
         }
+        } catch (Throwable t) {
+            top.mrxiaom.sweet.playermarket.SweetPlayerMarket.getInstance()
+                    .warn("拍卖动作执行异常: " + t.getMessage(), t);
+        }
+
     }
 }

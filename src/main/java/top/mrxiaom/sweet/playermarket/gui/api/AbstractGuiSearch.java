@@ -356,8 +356,13 @@ public abstract class AbstractGuiSearch extends AbstractGuiModule {
                 LoadedIcon icon = otherIcons.get(id);
                 if (icon != null) {
                     plugin.getScheduler().runTask(() -> {
-                        icon.click(player, type);
-                        actionLock = false;
+                        // try-finally 保证任何异常下 actionLock 都复位，
+                        // 否则某个按钮动作抛异常会导致整个 GUI 后续点击全部失效
+                        try {
+                            icon.click(player, type);
+                        } finally {
+                            actionLock = false;
+                        }
                     });
                     return;
                 }

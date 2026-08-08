@@ -281,17 +281,21 @@ public abstract class AbstractAuctionGui extends AbstractGuiModule {
             Character clickedId = getClickedId(slot);
             if (clickedId == null) return;
             actionLock = true;
-            if (clickedId == '拍') {
-                int i = getAppearTimes(clickedId, slot) - 1;
-                Auction auction = getAuction(i);
-                if (auction == null) {
-                    actionLock = false;
+            try {
+                if (clickedId == '拍') {
+                    int i = getAppearTimes(clickedId, slot) - 1;
+                    Auction auction = getAuction(i);
+                    if (auction == null) {
+                        return;
+                    }
+                    onClickAuction(action, click, slotType, slot, auction, i, view, event);
                     return;
                 }
-                onClickAuction(action, click, slotType, slot, auction, i, view, event);
-                return;
+                handleOtherClick(click, clickedId);
+            } finally {
+                // 任何异常/正常路径都复位点击锁，防止 GUI 卡死
+                actionLock = false;
             }
-            handleOtherClick(click, clickedId);
         }
 
         /** 点击拍卖槽位（子类实现：打开详情/领取/取消等） */
@@ -307,8 +311,12 @@ public abstract class AbstractAuctionGui extends AbstractGuiModule {
                 LoadedIcon icon = otherIcons.get(id);
                 if (icon != null) {
                     plugin.getScheduler().runTask(() -> {
-                        icon.click(player, type);
-                        actionLock = false;
+                        // try-finally 保证异常下 actionLock 复位（防止 GUI 卡死）
+                        try {
+                            icon.click(player, type);
+                        } finally {
+                            actionLock = false;
+                        }
                     });
                     return;
                 }

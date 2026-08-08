@@ -16,6 +16,7 @@ import static top.mrxiaom.pluginbase.func.language.LanguageFieldAutoHolder.field
 public class AuctionMessages {
 
     public static final Message create__no_item = field("&e请手持要拍卖的物品");
+    public static final Message no_currency = field("&c拍卖经济系统不可用，请联系服务器管理员");
     public static final Message create__no_price_valid = field("&e请输入正确的起拍价");
     public static final Message create__price_too_low = field("&e起拍价不能低于 %min%");
     public static final Message create__duration_invalid = field("&e拍卖时长无效，格式示例: 1h / 24h / 7d");

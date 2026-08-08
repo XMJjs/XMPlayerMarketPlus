@@ -179,6 +179,7 @@ public class AuctionService extends AbstractModule {
                 }
                 IEconomy currency = economy();
                 if (currency == null) {
+                    AuctionMessages.no_currency.tm(player);
                     if (callback != null) callback.accept(false);
                     return;
                 }

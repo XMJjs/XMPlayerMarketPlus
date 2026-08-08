@@ -45,6 +45,7 @@ public class ActionAuctionOpen implements IAction {
 
     @Override
     public void run(@NotNull Player player, java.util.List<top.mrxiaom.pluginbase.utils.Pair<String, Object>> replacements) {
+        try {
         switch (target) {
             case "list":
                 GuiAuctionList.open(player);
@@ -62,6 +63,11 @@ public class ActionAuctionOpen implements IAction {
             default:
                 GuiAuctionMain.open(player);
                 break;
+        }
+        } catch (Throwable t) {
+            // 打开失败也不向上抛：否则父 GUI 的 actionLock 无法复位导致界面卡死
+            top.mrxiaom.sweet.playermarket.SweetPlayerMarket.getInstance()
+                    .warn("打开拍卖界面 [" + target + "] 失败: " + t.getMessage(), t);
         }
     }
 }

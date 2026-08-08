@@ -35,6 +35,7 @@ public class ActionAuctionSort implements IAction {
 
     @Override
     public void run(@NotNull Player player, List<top.mrxiaom.pluginbase.utils.Pair<String, Object>> replacements) {
+        try {
         IGuiHolder gui = GuiManager.inst().getOpeningGui(player);
         if (gui instanceof GuiAuctionList.Impl) {
             GuiAuctionList.Impl impl = (GuiAuctionList.Impl) gui;
@@ -48,5 +49,10 @@ public class ActionAuctionSort implements IAction {
             }
             GuiAuctionList.open(player, SORTS[(index + 1) % SORTS.length]);
         }
+        } catch (Throwable t) {
+            top.mrxiaom.sweet.playermarket.SweetPlayerMarket.getInstance()
+                    .warn("拍卖动作执行异常: " + t.getMessage(), t);
+        }
+
     }
 }
