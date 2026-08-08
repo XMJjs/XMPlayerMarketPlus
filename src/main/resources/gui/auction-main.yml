@@ -1,5 +1,5 @@
 # 拍卖主菜单
-title: '<gradient:gold:yellow><bold>⚒ 拍卖行</bold></gradient>'
+title: '拍卖行'
 inventory:
   - '#########'
   - '#       #'

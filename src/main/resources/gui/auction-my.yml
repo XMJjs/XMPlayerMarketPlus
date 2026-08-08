@@ -1,5 +1,5 @@
 # 我的拍卖（卖家视角）
-title: '<gradient:light_purple:purple>我的拍卖 - 第 %page%/%max_page% 页</gradient>'
+title: '我的拍卖 - 第 %page%/%max_page% 页'
 inventory:
   - '#########'
   - '#拍拍拍拍拍拍拍#'

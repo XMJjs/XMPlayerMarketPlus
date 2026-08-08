@@ -131,7 +131,8 @@ public class GuiAuctionCreate extends AbstractAuctionGui {
                                 Double v = parseDouble(input);
                                 if (v != null && v > 0) {
                                     startPrice = v;
-                                    refreshState();
+                                    // Prompter 回调运行在异步聊天线程，刷新界面必须切主线程
+                                    plugin.getScheduler().runTask(this::refreshState);
                                 }
                             }, null);
                         } else if (type == ClickType.RIGHT) {
@@ -148,8 +149,10 @@ public class GuiAuctionCreate extends AbstractAuctionGui {
                             AuctionMessages.bid__prompt.tm(player);
                             Prompter.chat(player, input -> {
                                 Double v = parseDouble(input);
-                                buyNowPrice = v != null && v > 0 ? v : 0;
-                                refreshState();
+                                if (v != null) {
+                                    buyNowPrice = v > 0 ? v : 0;
+                                    plugin.getScheduler().runTask(this::refreshState);
+                                }
                             }, null);
                         } else {
                             buyNowPrice = buyNowPrice > 0 ? 0 : startPrice * 2;
@@ -177,10 +180,15 @@ public class GuiAuctionCreate extends AbstractAuctionGui {
                         AuctionService.inst().createAuction(
                                 player, hand, startPrice, buyNowPrice, 0,
                                 durationMinutes, autoExtend, success -> {
-                                    if (success) {
-                                        plugin.getScheduler().closeInventory(player);
-                                        GuiAuctionMain.open(player);
-                                    }
+                                    // createAuction 的回调运行在异步线程（落库完成），
+                                    // 关界面/打开新界面必须切回主线程，否则抛
+                                    // "InventoryCloseEvent may only be triggered synchronously"
+                                    plugin.getScheduler().runTask(() -> {
+                                        if (success) {
+                                            plugin.getScheduler().closeInventory(player);
+                                            GuiAuctionMain.open(player);
+                                        }
+                                    });
                                 });
                         break;
                     }

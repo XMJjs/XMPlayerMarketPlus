@@ -90,8 +90,8 @@ public class AuctionService extends AbstractModule {
                 double fee = config().listingFeeEnabled() ? config().listingFee() : 0;
                 try (Connection conn = plugin.getConnection()) {
                     AuctionDatabase db = db();
-                    // 上限校验
-                    int mine = db.countBySeller(conn, key);
+                    // 上限校验（只数"进行中"的拍卖，已取消/已结束的不占名额）
+                    int mine = db.countActiveBySeller(conn, key);
                     if (config().maxAuctionsPerPlayer() > 0 && mine >= config().maxAuctionsPerPlayer()) {
                         AuctionMessages.create__limit_reached.tm(player,
                                 top.mrxiaom.pluginbase.utils.Pair.of("%limit%", config().maxAuctionsPerPlayer()));

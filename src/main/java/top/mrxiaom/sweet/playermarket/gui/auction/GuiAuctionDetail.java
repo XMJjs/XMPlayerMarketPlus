@@ -76,6 +76,19 @@ public class GuiAuctionDetail extends AbstractAuctionGui {
             return auction == null ? Collections.emptyList() : Collections.singletonList(auction);
         }
 
+        /**
+         * 把当前拍卖的占位符注入 commonReplacements，
+         * 使 other-icons 按钮（'出'/'口' 等）的 lore 中
+         * %auction_next_bid% / %auction_buy_now% 等能正确显示。
+         */
+        @Override
+        protected void updateReplacements() {
+            commonReplacements.clear();
+            if (current != null) {
+                applyAuctionPlaceholders(plugin, current, player, commonReplacements);
+            }
+        }
+
         @Override
         protected void onClickAuction(InventoryAction action, ClickType click,
                                       InventoryType.SlotType slotType, int slot,
@@ -108,7 +121,9 @@ public class GuiAuctionDetail extends AbstractAuctionGui {
                                     AuctionMessages.bid__too_low.tm(player, Pair.of("%amount%", "0"));
                                     return;
                                 }
-                                AuctionService.inst().bid(player, auctionId, amount, this::afterBid);
+                                // Prompter 回调运行在异步聊天线程，业务统一从主线程发起
+                                plugin.getScheduler().runTask(() ->
+                                        AuctionService.inst().bid(player, auctionId, amount, this::afterBid));
                             }, null);
                         } else {
                             AuctionService.inst().bid(player, auctionId, auction.nextBidAmount(), this::afterBid);

@@ -1,5 +1,5 @@
 # 竞拍记录（买家视角）
-title: '<gradient:gold:yellow>竞拍记录 - 第 %page%/%max_page% 页</gradient>'
+title: '竞拍记录 - 第 %page%/%max_page% 页'
 inventory:
   - '#########'
   - '#拍拍拍拍拍拍拍#'

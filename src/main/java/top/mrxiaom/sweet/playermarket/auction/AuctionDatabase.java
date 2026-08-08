@@ -218,11 +218,12 @@ public class AuctionDatabase extends AbstractPluginHolder implements IDatabase {
         }
     }
 
-    /** 某卖家名下拍卖（含历史，按创建时间倒序） */
+    /** 某卖家名下的"我的拍卖"：进行中（ACTIVE）+ 有待领内容（data 含 claim 标记），按创建时间倒序分页 */
     public List<Auction> getBySeller(Connection conn, String sellerId, int page, int size) throws SQLException {
         List<Auction> list = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT * FROM `" + TABLE_AUCTIONS + "` WHERE `seller`=? ORDER BY `create_time` DESC LIMIT ? OFFSET ?"
+                "SELECT * FROM `" + TABLE_AUCTIONS + "` WHERE `seller`=? AND (`status`=0 OR `data` LIKE '%claim:%') " +
+                        "ORDER BY `create_time` DESC LIMIT ? OFFSET ?"
         )) {
             ps.setString(1, sellerId);
             ps.setInt(2, size);
@@ -234,9 +235,22 @@ public class AuctionDatabase extends AbstractPluginHolder implements IDatabase {
         return list;
     }
 
+    /** "我的拍卖"总数（与 getBySeller 同条件，供 GUI 分页标题） */
     public int countBySeller(Connection conn, String sellerId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT COUNT(*) FROM `" + TABLE_AUCTIONS + "` WHERE `seller`=?"
+                "SELECT COUNT(*) FROM `" + TABLE_AUCTIONS + "` WHERE `seller`=? AND (`status`=0 OR `data` LIKE '%claim:%')"
+        )) {
+            ps.setString(1, sellerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
+    /** 卖家"进行中"拍卖数（用于创建拍卖的上限校验，不含已结束/已取消的历史） */
+    public int countActiveBySeller(Connection conn, String sellerId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT COUNT(*) FROM `" + TABLE_AUCTIONS + "` WHERE `seller`=? AND `status`=0"
         )) {
             ps.setString(1, sellerId);
             try (ResultSet rs = ps.executeQuery()) {
